@@ -1,10 +1,10 @@
 {
   "name": "Tokens",
-  "author": "Aragon Association",
+  "author": "1Hive",
   "description": "Manage an organization's token supply and distribution",
-  "changelog_url": "https://github.com/aragon/aragon-apps/releases",
+  "changelog_url": "https://github.com/1hive/token-manager/releases",
   "details_url": "/meta/details.md",
-  "source_url": "https://github.com/aragon/aragon-apps/blob/master/apps/token-manager",
+  "source_url": "https://github.com/1hive/token-manager",
   "icons": [
     { "src": "/meta/icon.svg", "sizes": "56x56" }
   ],
