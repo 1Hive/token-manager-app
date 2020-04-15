@@ -35,24 +35,10 @@ interface ITokenManagerHook {
     * @param _amount The amount being allowed
     */
     function onApprove(address _holder, address _spender, uint _amount) external returns (bool);
-
-    /*
-    * @dev Notifies the hook about a vesting assignation allowing the hook to react if desired
-    * @param _receiver The address receiving the tokens
-    * @param _vestingId Numeric id of the vesting
-    */
-    function onAssignVested(address _receiver, uint256 _vestingId) external;
-
-    /*
-    * @dev Notifies the hook about a vesting revocation allowing the hook to react if desired
-    * @param _holder Address whose vesting to revoke
-    * @param _vestingId Numeric id of the vesting
-    */
-    function onRevokeVesting(address _holder, uint256 _vestingId) external;
 }
 
 
-contract TokenManagerHook {
+contract TokenManagerHook is ITokenManagerHook {
     function onRegisterAsHook(address _tokenManager, uint256 _hookId) external {
         return;
     }
@@ -67,13 +53,5 @@ contract TokenManagerHook {
 
     function onApprove(address, address, uint) external returns (bool) {
         return true;
-    }
-
-    function onAssignVested(address, uint256) external {
-        return;
-    }
-
-    function onRevokeVesting(address, uint256) external {
-        return;
     }
 }

@@ -555,17 +555,17 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
             beforeEach(async () => {
                 await tokenManager.issue(totalTokens)
             })
-            it('calls onAssignVested hook when assigning vested', async () => {
+            it('calls onTransfer hook when assigning vested', async () => {
                 const { receipt } = await tokenManager.assignVested(holder, totalTokens, startDate, cliffDate, vestingDate, revokable)
-                assert.equal(parseInt(getTopicArgument(receipt, 'AssignVestingHooked(uint256)', 1, 0)), 0)
-                assert.equal(parseInt(getTopicArgument(receipt, 'AssignVestingHooked(uint256)', 1, 1)), 2)
+                assert.equal(parseInt(getTopicArgument(receipt, 'TransferHooked(uint256,address,address)', 1, 0)), 0)
+                assert.equal(parseInt(getTopicArgument(receipt, 'TransferHooked(uint256,address,address)', 1, 1)), 2)
             })
-            it('calls onRevokeVesting hook when revoking vesting', async () => {
+            it('calls onTransfer hook when revoking vesting', async () => {
                 await tokenManager.assignVested(holder, totalTokens, startDate, cliffDate, vestingDate, revokable)
                 await tokenManager.mockIncreaseTime(CLIFF_DURATION)
                 const { receipt } = await tokenManager.revokeVesting(holder, 0)
-                assert.equal(parseInt(getTopicArgument(receipt, 'VestingRevokeHooked(uint256)', 1, 0)), 0)
-                assert.equal(parseInt(getTopicArgument(receipt, 'VestingRevokeHooked(uint256)', 1, 1)), 2)
+                assert.equal(parseInt(getTopicArgument(receipt, 'TransferHooked(uint256,address,address)', 1, 0)), 0)
+                assert.equal(parseInt(getTopicArgument(receipt, 'TransferHooked(uint256,address,address)', 1, 1)), 2)
             })
         })
     })

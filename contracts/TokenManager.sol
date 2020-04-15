@@ -192,12 +192,6 @@ contract TokenManager is ITokenController, IForwarder, AragonApp {
             _revokable
         );
 
-        for (uint256 i = 0; i < hooksLength; i++) {
-            if (address(hooks[i]) != 0) {
-                hooks[i].onAssignVested(_receiver, vestingId);
-            }
-        }
-
         _assign(_receiver, _amount);
 
         emit NewVesting(_receiver, vestingId, _amount);
@@ -217,12 +211,6 @@ contract TokenManager is ITokenController, IForwarder, AragonApp {
     {
         TokenVesting storage v = vestings[_holder][_vestingId];
         require(v.revokable, ERROR_VESTING_NOT_REVOKABLE);
-
-        for (uint256 i = 0; i < hooksLength; i++) {
-            if (address(hooks[i]) != 0) {
-                hooks[i].onRevokeVesting(_holder, _vestingId);
-            }
-        }
 
         uint256 nonVested = _calculateNonVestedTokens(
             v.amount,
@@ -262,7 +250,7 @@ contract TokenManager is ITokenController, IForwarder, AragonApp {
         uint256 i = 0;
         while (transferable && i < hooksLength) {
             if (address(hooks[i]) != 0) {
-                transferable = transferable && hooks[i].onTransfer(_from, _to, _amount);
+                transferable = hooks[i].onTransfer(_from, _to, _amount);
             }
             i++;
         }
@@ -279,7 +267,7 @@ contract TokenManager is ITokenController, IForwarder, AragonApp {
         uint256 i = 0;
         while (approved && i < hooksLength) {
             if (address(hooks[i]) != 0) {
-                approved = approved && hooks[i].onApprove(_holder, _spender, _amount);
+                approved = hooks[i].onApprove(_holder, _spender, _amount);
             }
             i++;
         }

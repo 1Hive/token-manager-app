@@ -10,8 +10,6 @@ contract TokenManagerHookMock is ITokenManagerHook {
     event RevokeHooked(uint indexed _id);
     event TransferHooked(uint indexed _id, address indexed _from, address indexed _to);
     event ApproveHooked(uint indexed _id);
-    event AssignVestingHooked(uint indexed _id);
-    event VestingRevokeHooked(uint indexed _id);
 
     constructor(uint _id) public {
         id = _id;
@@ -33,13 +31,5 @@ contract TokenManagerHookMock is ITokenManagerHook {
     function onApprove(address, address, uint) external returns (bool) {
         emit ApproveHooked(id);
         return true;
-    }
-
-    function onAssignVested(address, uint256) external {
-        emit AssignVestingHooked(id);
-    }
-
-    function onRevokeVesting(address, uint256) external {
-        emit VestingRevokeHooked(id);
     }
 }
