@@ -106,7 +106,7 @@ contract TokenManager is ITokenController, IForwarder, AragonApp {
     * @notice Create a new Token Manager hook for `_hook`
     * @param _hook Contract that will be used as Token Manager hook
     */
-    function registerHook(address _hook) external authP(SET_HOOK_ROLE, arr(_hook)) returns (uint) {
+    function registerHook(address _hook) external authP(SET_HOOK_ROLE, arr(_hook)) returns (uint256) {
         uint256 hookId = hooksLength++;
         hooks[hookId] = ITokenManagerHook(_hook);
         hooks[hookId].onRegisterAsHook(this, hookId);
@@ -246,15 +246,10 @@ contract TokenManager is ITokenController, IForwarder, AragonApp {
     * @return False if the controller does not authorize the transfer
     */
     function onTransfer(address _from, address _to, uint256 _amount) external onlyToken returns (bool) {
-        bool transferable = _isBalanceIncreaseAllowed(_to, _amount) && _transferableBalance(_from, getTimestamp()) >= _amount;
-        uint256 i = 0;
-        while (transferable && i < hooksLength) {
-            if (address(hooks[i]) != 0) {
-                transferable = hooks[i].onTransfer(_from, _to, _amount);
-            }
-            i++;
+        if (_isBalanceIncreaseAllowed(_to, _amount) && _transferableBalance(_from, getTimestamp()) >= _amount) {
+            return _triggerOnTransferHook(_from, _to, _amount);
         }
-        return transferable;
+        return false;
     }
 
     /**
@@ -263,15 +258,7 @@ contract TokenManager is ITokenController, IForwarder, AragonApp {
     * @return False if the controller does not authorize the approval
     */
     function onApprove(address _holder, address _spender, uint _amount) external onlyToken returns (bool) {
-        bool approved = true;
-        uint256 i = 0;
-        while (approved && i < hooksLength) {
-            if (address(hooks[i]) != 0) {
-                approved = hooks[i].onApprove(_holder, _spender, _amount);
-            }
-            i++;
-        }
-        return approved;
+        return _triggerOnApproveHook(_holder, _spender, _amount);
     }
 
     /**
@@ -361,20 +348,12 @@ contract TokenManager is ITokenController, IForwarder, AragonApp {
 
     function _mint(address _receiver, uint256 _amount) internal {
         require(_isBalanceIncreaseAllowed(_receiver, _amount), ERROR_BALANCE_INCREASE_NOT_ALLOWED);
-        for (uint256 i = 0; i < hooksLength; i++) {
-            if (address(hooks[i]) != 0) {
-                hooks[i].onTransfer(0x0, _receiver, _amount);
-            }
-        }
+        _triggerOnTransferHook(0x0, _receiver, _amount);
         token.generateTokens(_receiver, _amount); // minime.generateTokens() never returns false
     }
 
     function _burn(address _holder, uint256 _amount) internal {
-        for (uint256 i = 0; i < hooksLength; i++) {
-            if (address(hooks[i]) != 0) {
-                hooks[i].onTransfer(_holder, 0x0, _amount);
-            }
-        }
+        _triggerOnTransferHook(_holder, 0x0, _amount);
         // minime.destroyTokens() never returns false, only reverts on failure
         token.destroyTokens(_holder, _amount);
     }
@@ -468,5 +447,27 @@ contract TokenManager is ITokenController, IForwarder, AragonApp {
         }
 
         return transferable;
+    }
+
+    function _triggerOnApproveHook(address _holder, address _spender, uint _amount) internal returns (bool approved) {
+        approved = true;
+        uint256 i = 0;
+        while (approved && i < hooksLength) {
+            if (address(hooks[i]) != 0) {
+                approved = hooks[i].onApprove(_holder, _spender, _amount);
+            }
+            i++;
+        }
+    }
+
+    function _triggerOnTransferHook(address _from, address _to, uint256 _amount) internal returns (bool transferable) {
+        transferable = true;
+        uint256 i = 0;
+        while (transferable && i < hooksLength) {
+            if (address(hooks[i]) != 0) {
+                transferable = hooks[i].onTransfer(_from, _to, _amount);
+            }
+            i++;
+        }
     }
 }
