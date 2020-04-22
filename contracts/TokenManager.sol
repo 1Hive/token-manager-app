@@ -58,7 +58,7 @@ contract TokenManager is ITokenController, IForwarder, AragonApp {
     mapping (address => mapping (uint256 => TokenVesting)) internal vestings;
     mapping (address => uint256) public vestingsLengths;
 
-    mapping (uint256 => ITokenManagerHook) internal hooks;
+    mapping (uint256 => TokenManagerHook) internal hooks;
     uint256 internal hooksLength;
 
     // Other token specific events can be watched on the token address directly (avoids duplication)
@@ -108,8 +108,8 @@ contract TokenManager is ITokenController, IForwarder, AragonApp {
     */
     function registerHook(address _hook) external authP(SET_HOOK_ROLE, arr(_hook)) returns (uint256) {
         uint256 hookId = hooksLength++;
-        hooks[hookId] = ITokenManagerHook(_hook);
-        hooks[hookId].onRegisterAsHook(this, hookId);
+        hooks[hookId] = TokenManagerHook(_hook);
+        hooks[hookId].onRegisterAsHook(hookId);
         return hookId;
     }
 
@@ -118,7 +118,7 @@ contract TokenManager is ITokenController, IForwarder, AragonApp {
     * @param _hookId Position of the hook to be removed
     */
     function revokeHook(uint256 _hookId) external authP(SET_HOOK_ROLE, arr(_hookId)) {
-        hooks[_hookId].onRevokeAsHook(this, _hookId);
+        hooks[_hookId].onRevokeAsHook(_hookId);
         delete hooks[_hookId];
     }
 

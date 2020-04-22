@@ -3,7 +3,7 @@ pragma solidity 0.4.24;
 import "../../TokenManagerHook.sol";
 
 
-contract TokenManagerHookMock is ITokenManagerHook {
+contract TokenManagerHookMock is TokenManagerHook {
     uint public id;
 
     event RegisterHooked(uint indexed _id);
@@ -15,20 +15,20 @@ contract TokenManagerHookMock is ITokenManagerHook {
         id = _id;
     }
 
-    function onRegisterAsHook(address, uint256) external {
+    function _onRegisterAsHook(address, uint256) internal {
         emit RegisterHooked(id);
     }
 
-    function onRevokeAsHook(address, uint256) external {
+    function _onRevokeAsHook(address, uint256) internal {
         emit RevokeHooked(id);
     }
 
-    function onTransfer(address _from, address _to, uint256) external returns (bool) {
+    function _onTransfer(address _from, address _to, uint256) internal returns (bool) {
         emit TransferHooked(id, _from, _to);
         return true;
     }
 
-    function onApprove(address, address, uint) external returns (bool) {
+    function _onApprove(address, address, uint) internal returns (bool) {
         emit ApproveHooked(id);
         return true;
     }
