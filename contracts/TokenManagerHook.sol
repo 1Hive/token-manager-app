@@ -21,20 +21,22 @@ contract TokenManagerHook is ReentrancyGuard {
     * @dev Called when this contract has been included as a Token Manager hook
     * @param _tokenManager Token Manager instance that has included the hook
     * @param _hookId The position in which the hook is going to be called
+    * @param _token The token controlled by the Token Manager
     */
-    function onRegisterAsHook(uint256 _hookId) external nonReentrant {
+    function onRegisterAsHook(uint256 _hookId, address _token) external nonReentrant {
         require(tokenManager == 0x0, "Hook already registered by Token Manager");
         tokenManager = msg.sender;
-        _onRegisterAsHook(msg.sender, _hookId);
+        _onRegisterAsHook(msg.sender, _hookId, _token);
     }
 
     /*
     * @dev Called when this hook is being removed from the Token Manager
     * @param _tokenManager Token Manager that removes the hook
     * @param _hookId The position in which the hook is going to be called
+    * @param _token The token controlled by the Token Manager
     */
-    function onRevokeAsHook(uint256 _hookId) external onlyTokenManager nonReentrant {
-        _onRevokeAsHook(msg.sender, _hookId);
+    function onRevokeAsHook(uint256 _hookId, address _token) external onlyTokenManager nonReentrant {
+        _onRevokeAsHook(msg.sender, _hookId, _token);
     }
 
     /*
@@ -63,11 +65,11 @@ contract TokenManagerHook is ReentrancyGuard {
 
     // Function to override if necessary:
 
-    function _onRegisterAsHook(address _tokenManager, uint256 _hookId) internal {
+    function _onRegisterAsHook(address _tokenManager, uint256 _hookId, address _token) internal {
         return;
     }
 
-    function _onRevokeAsHook(address _tokenManager, uint256 _hookId) internal {
+    function _onRevokeAsHook(address _tokenManager, uint256 _hookId, address _token) internal {
         return;
     }
 

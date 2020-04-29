@@ -104,7 +104,7 @@ contract HookedTokenManager is TokenManager {
     function registerHook(address _hook) external authP(SET_HOOK_ROLE, arr(_hook)) returns (uint256) {
         uint256 hookId = hooksLength++;
         hooks[hookId] = TokenManagerHook(_hook);
-        hooks[hookId].onRegisterAsHook(hookId);
+        hooks[hookId].onRegisterAsHook(hookId, token);
         return hookId;
     }
 
@@ -113,7 +113,7 @@ contract HookedTokenManager is TokenManager {
     * @param _hookId Position of the hook to be removed
     */
     function revokeHook(uint256 _hookId) external authP(SET_HOOK_ROLE, arr(_hookId)) {
-        hooks[_hookId].onRevokeAsHook(_hookId);
+        hooks[_hookId].onRevokeAsHook(_hookId, token);
         delete hooks[_hookId];
     }
 

@@ -15,11 +15,11 @@ contract TokenManagerHookMock is TokenManagerHook {
         id = _id;
     }
 
-    function _onRegisterAsHook(address, uint256) internal {
+    function _onRegisterAsHook(address, uint256, address) internal {
         emit RegisterHooked(id);
     }
 
-    function _onRevokeAsHook(address, uint256) internal {
+    function _onRevokeAsHook(address, uint256, address) internal {
         emit RevokeHooked(id);
     }
 
