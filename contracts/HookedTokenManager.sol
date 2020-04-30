@@ -25,6 +25,9 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
     bytes32 public constant ASSIGN_ROLE = keccak256("ASSIGN_ROLE");
     bytes32 public constant REVOKE_VESTINGS_ROLE = keccak256("REVOKE_VESTINGS_ROLE");
     bytes32 public constant BURN_ROLE = keccak256("BURN_ROLE");
+    bytes32 public constant CHANGE_CONTROLLER_ROLE = keccak256("CHANGE_CONTROLLER_ROLE");
+    bytes32 public constant TOGGLE_TRANSFERS_ROLE = keccak256("TOGGLE_TRANSFERS_ROLE");
+    bytes32 public constant SET_MAX_TOKENS_ROLE = keccak256("SET_MAX_TOKENS_ROLE");
     bytes32 public constant SET_HOOK_ROLE = keccak256("SET_HOOK_ROLE");
 
     uint256 public constant MAX_VESTINGS_PER_ADDRESS = 50;
@@ -156,6 +159,41 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
     */
     function burn(address _holder, uint256 _amount) external authP(BURN_ROLE, arr(_holder, _amount)) {
         _burn(_holder, _amount);
+    }
+
+    /**
+    * @notice Adopt new `_newToken.symbol(): string` token whose address is `_newToken`, and transfer control of the old `self.token().symbol(): string` token to `_controllerForOldToken`
+    * @param _newToken MiniMeToken address for the new managed token (Token Manager instance must be already set as the token controller)
+    * @param _controllerForOldToken Address to transfer control of the old token
+    */
+    function switchTokenController(
+        MiniMeToken _newToken,
+        address _controllerForOldToken
+    )
+        external
+        authP(CHANGE_CONTROLLER_ROLE, arr(_newToken, _controllerForOldToken))
+    {
+        require(_newToken.controller() == address(this), ERROR_TOKEN_CONTROLLER);
+        token.changeController(_controllerForOldToken);
+        token = _newToken;
+    }
+
+    /**
+    * @notice `_transferable : 'Enable' : 'Diable'` transfers for `self.token().symbol(): string`
+    * @param _transferable whether the token can be transferred by holders
+    */
+    function enableTransfers(bool _transferable) external authP(TOGGLE_TRANSFERS_ROLE, arr(uint256(_transferable ? 1 : 0))) {
+        if (token.transfersEnabled() != _transferable) {
+            token.enableTransfers(_transferable);
+        }
+    }
+
+    /**
+    * @notice `_maxAccountTokens > 0 ? 'Limit to a maximum of ' + @tokenAmount(self.token(): address, _maxAccountTokens, false) + ' per account' : 'Remove maximum amount of tokens per account limit'`
+    * @param _maxAccountTokens Maximum amount of tokens an account can have (0 for infinite tokens)
+    */
+    function setMaxAccountTokens(uint256 _maxAccountTokens) external authP(SET_MAX_TOKENS_ROLE, arr(_maxAccountTokens)) {
+        maxAccountTokens = _maxAccountTokens == 0 ? uint256(-1) : _maxAccountTokens;
     }
 
     /**

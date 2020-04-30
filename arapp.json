@@ -60,6 +60,28 @@
       ]
     },
     {
+      "name": "Change token controller",
+      "id": "CHANGE_CONTROLLER_ROLE",
+      "params": [
+        "New token",
+        "New controller"
+      ]
+    },
+    {
+      "name": "Toggle transferability",
+      "id": "TOGGLE_TRANSFERS_ROLE",
+      "params": [
+        "Transferable"
+      ]
+    },
+    {
+      "name": "Set max tokens per account",
+      "id": "SET_MAX_TOKENS_ROLE",
+      "params": [
+        "Max tokens per account"
+      ]
+    },
+    {
       "name": "Set hooks",
       "id": "SET_HOOK_ROLE",
       "params": [
