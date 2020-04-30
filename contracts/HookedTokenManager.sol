@@ -6,12 +6,18 @@
 
 pragma solidity 0.4.24;
 
-import "@aragon/apps-token-manager/contracts/TokenManager.sol";
+import "@aragon/os/contracts/apps/AragonApp.sol";
+import "@aragon/os/contracts/common/IForwarder.sol";
+
+import "@aragon/os/contracts/lib/math/SafeMath.sol";
+
+import "@aragon/apps-shared-minime/contracts/ITokenController.sol";
+import "@aragon/apps-shared-minime/contracts/MiniMeToken.sol";
 
 import "./TokenManagerHook.sol";
 
 
-contract HookedTokenManager is TokenManager {
+contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
     using SafeMath for uint256;
 
     bytes32 public constant MINT_ROLE = keccak256("MINT_ROLE");
@@ -36,14 +42,13 @@ contract HookedTokenManager is TokenManager {
     string private constant ERROR_BALANCE_INCREASE_NOT_ALLOWED = "TM_BALANCE_INC_NOT_ALLOWED";
     string private constant ERROR_ASSIGN_TRANSFER_FROM_REVERTED = "TM_ASSIGN_TRANSFER_FROM_REVERTED";
 
-    // @dev Already declared in parent
-    // struct TokenVesting {
-    //     uint256 amount;
-    //     uint64 start;
-    //     uint64 cliff;
-    //     uint64 vesting;
-    //     bool revokable;
-    // }
+    struct TokenVesting {
+        uint256 amount;
+        uint64 start;
+        uint64 cliff;
+        uint64 vesting;
+        bool revokable;
+    }
 
     // Note that we COMPLETELY trust this MiniMeToken to not be malicious for proper operation of this contract
     MiniMeToken public token;
