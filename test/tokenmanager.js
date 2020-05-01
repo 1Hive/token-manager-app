@@ -504,6 +504,7 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
             // Transfer from 0x0 to holder
             assert.equal(getTopicArgumentAsAddr(receipt, 'TransferHooked(uint256,address,address)', 2), ZERO_ADDR)
             assert.equal(getTopicArgumentAsAddr(receipt, 'TransferHooked(uint256,address,address)', 3), holder)
+            assert.equal(await token.balanceOf(holder), 10)
         })
 
         it('calls onTransfer hook on token transfers', async () => {
@@ -515,6 +516,8 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
             assert.equal(parseInt(getTopicArgument(receipt2, 'TransferHooked(uint256,address,address)', 1, 0)), 0)
             assert.equal(parseInt(getTopicArgument(receipt2, 'TransferHooked(uint256,address,address)', 1, 1)), 2)
 
+            assert.equal(await token.balanceOf(tokenManager.address), 5, 'Token Manager balance before transfer')
+
             const { receipt: receipt3 } = await token.transfer(tokenManager.address, 5, { from: holder })
             assert.equal(parseInt(getTopicArgument(receipt3, 'TransferHooked(uint256,address,address)', 1, 0)), 0)
             assert.equal(parseInt(getTopicArgument(receipt3, 'TransferHooked(uint256,address,address)', 1, 1)), 2)
@@ -522,6 +525,8 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
             // Transfer from holder to token manager
             assert.equal(getTopicArgumentAsAddr(receipt3, 'TransferHooked(uint256,address,address)', 2), holder)
             assert.equal(getTopicArgumentAsAddr(receipt3, 'TransferHooked(uint256,address,address)', 3), tokenManager.address)
+            
+            assert.equal(await token.balanceOf(tokenManager.address), 10, 'Token Manager balance after transfer')
         })
 
         it('calls onTransfer hook on token burnings', async () => {
@@ -533,6 +538,7 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
             // Transfer from holder to token manager
             assert.equal(getTopicArgumentAsAddr(receipt, 'TransferHooked(uint256,address,address)', 2), holder)
             assert.equal(getTopicArgumentAsAddr(receipt, 'TransferHooked(uint256,address,address)', 3), ZERO_ADDR)
+            assert.equal(await token.balanceOf(holder), 0)
         })
 
         it('calls onApprove hook on token approvals', async () => {
