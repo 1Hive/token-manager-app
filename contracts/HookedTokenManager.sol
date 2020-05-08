@@ -14,8 +14,10 @@ import "@aragon/os/contracts/lib/math/SafeMath.sol";
 import "@aragon/apps-shared-minime/contracts/ITokenController.sol";
 import "@aragon/apps-shared-minime/contracts/MiniMeToken.sol";
 
+import "./TokenManagerHook.sol";
 
-contract TokenManager is ITokenController, IForwarder, AragonApp {
+
+contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
     using SafeMath for uint256;
 
     bytes32 public constant MINT_ROLE = keccak256("MINT_ROLE");
@@ -23,6 +25,7 @@ contract TokenManager is ITokenController, IForwarder, AragonApp {
     bytes32 public constant ASSIGN_ROLE = keccak256("ASSIGN_ROLE");
     bytes32 public constant REVOKE_VESTINGS_ROLE = keccak256("REVOKE_VESTINGS_ROLE");
     bytes32 public constant BURN_ROLE = keccak256("BURN_ROLE");
+    bytes32 public constant SET_HOOK_ROLE = keccak256("SET_HOOK_ROLE");
 
     uint256 public constant MAX_VESTINGS_PER_ADDRESS = 50;
 
@@ -54,6 +57,9 @@ contract TokenManager is ITokenController, IForwarder, AragonApp {
     // We are mimicing an array in the inner mapping, we use a mapping instead to make app upgrade more graceful
     mapping (address => mapping (uint256 => TokenVesting)) internal vestings;
     mapping (address => uint256) public vestingsLengths;
+
+    mapping (uint256 => TokenManagerHook) internal hooks;
+    uint256 internal hooksLength;
 
     // Other token specific events can be watched on the token address directly (avoids duplication)
     event NewVesting(address indexed receiver, uint256 vestingId, uint256 amount);
@@ -97,6 +103,26 @@ contract TokenManager is ITokenController, IForwarder, AragonApp {
     }
 
     /**
+    * @notice Create a new Token Manager hook for `_hook`
+    * @param _hook Contract that will be used as Token Manager hook
+    */
+    function registerHook(address _hook) external authP(SET_HOOK_ROLE, arr(_hook)) returns (uint256) {
+        uint256 hookId = hooksLength++;
+        hooks[hookId] = TokenManagerHook(_hook);
+        hooks[hookId].onRegisterAsHook(hookId, token);
+        return hookId;
+    }
+
+    /**
+    * @notice Revoke Token Manager hook #`_hookId`
+    * @param _hookId Position of the hook to be removed
+    */
+    function revokeHook(uint256 _hookId) external authP(SET_HOOK_ROLE, arr(_hookId)) {
+        hooks[_hookId].onRevokeAsHook(_hookId, token);
+        delete hooks[_hookId];
+    }
+
+    /**
     * @notice Mint `@tokenAmount(self.token(): address, _amount, false)` tokens for `_receiver`
     * @param _receiver The address receiving the tokens, cannot be the Token Manager itself (use `issue()` instead)
     * @param _amount Number of tokens minted
@@ -129,8 +155,7 @@ contract TokenManager is ITokenController, IForwarder, AragonApp {
     * @param _amount Number of tokens being burned
     */
     function burn(address _holder, uint256 _amount) external authP(BURN_ROLE, arr(_holder, _amount)) {
-        // minime.destroyTokens() never returns false, only reverts on failure
-        token.destroyTokens(_holder, _amount);
+        _burn(_holder, _amount);
     }
 
     /**
@@ -221,7 +246,10 @@ contract TokenManager is ITokenController, IForwarder, AragonApp {
     * @return False if the controller does not authorize the transfer
     */
     function onTransfer(address _from, address _to, uint256 _amount) external onlyToken returns (bool) {
-        return _isBalanceIncreaseAllowed(_to, _amount) && _transferableBalance(_from, getTimestamp()) >= _amount;
+        if (_isBalanceIncreaseAllowed(_to, _amount) && _transferableBalance(_from, getTimestamp()) >= _amount) {
+            return _triggerOnTransferHook(_from, _to, _amount);
+        }
+        return false;
     }
 
     /**
@@ -229,8 +257,8 @@ contract TokenManager is ITokenController, IForwarder, AragonApp {
     *      Initialization check is implicitly provided by `onlyToken()`.
     * @return False if the controller does not authorize the approval
     */
-    function onApprove(address, address, uint) external onlyToken returns (bool) {
-        return true;
+    function onApprove(address _holder, address _spender, uint _amount) external onlyToken returns (bool) {
+        return _triggerOnApproveHook(_holder, _spender, _amount);
     }
 
     /**
@@ -320,7 +348,14 @@ contract TokenManager is ITokenController, IForwarder, AragonApp {
 
     function _mint(address _receiver, uint256 _amount) internal {
         require(_isBalanceIncreaseAllowed(_receiver, _amount), ERROR_BALANCE_INCREASE_NOT_ALLOWED);
+        _triggerOnTransferHook(0x0, _receiver, _amount);
         token.generateTokens(_receiver, _amount); // minime.generateTokens() never returns false
+    }
+
+    function _burn(address _holder, uint256 _amount) internal {
+        _triggerOnTransferHook(_holder, 0x0, _amount);
+        // minime.destroyTokens() never returns false, only reverts on failure
+        token.destroyTokens(_holder, _amount);
     }
 
     function _isBalanceIncreaseAllowed(address _receiver, uint256 _inc) internal view returns (bool) {
@@ -412,5 +447,27 @@ contract TokenManager is ITokenController, IForwarder, AragonApp {
         }
 
         return transferable;
+    }
+
+    function _triggerOnApproveHook(address _holder, address _spender, uint _amount) internal returns (bool approved) {
+        approved = true;
+        uint256 i = 0;
+        while (approved && i < hooksLength) {
+            if (address(hooks[i]) != 0) {
+                approved = hooks[i].onApprove(_holder, _spender, _amount);
+            }
+            i++;
+        }
+    }
+
+    function _triggerOnTransferHook(address _from, address _to, uint256 _amount) internal returns (bool transferable) {
+        transferable = true;
+        uint256 i = 0;
+        while (transferable && i < hooksLength) {
+            if (address(hooks[i]) != 0) {
+                transferable = hooks[i].onTransfer(_from, _to, _amount);
+            }
+            i++;
+        }
     }
 }

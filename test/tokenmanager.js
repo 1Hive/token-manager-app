@@ -1,5 +1,6 @@
 const { assertRevert } = require('@aragon/test-helpers/assertThrow')
 const { getEventArgument, getNewProxyAddress } = require('@aragon/test-helpers/events')
+const { getTopicArgument, getTopicArgumentAsAddr } = require('./helpers/topics')
 const getBalance = require('@aragon/test-helpers/balance')(web3)
 const { makeErrorMappingProxy } = require('@aragon/test-helpers/utils')
 
@@ -14,14 +15,16 @@ const DAOFactory = artifacts.require('DAOFactory')
 const EVMScriptRegistryFactory = artifacts.require('EVMScriptRegistryFactory')
 const EtherTokenConstantMock = artifacts.require('EtherTokenConstantMock')
 
-const n = '0x00'
+const TokenManagerHook = artifacts.require('TokenManagerHookMock')
+
+const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
 const ANY_ADDR = '0xffffffffffffffffffffffffffffffffffffffff'
 
 contract('Token Manager', ([root, holder, holder2, anyone]) => {
     let tokenManagerBase, daoFact, tokenManager, token
 
     let APP_MANAGER_ROLE
-    let MINT_ROLE, ISSUE_ROLE, ASSIGN_ROLE, REVOKE_VESTINGS_ROLE, BURN_ROLE
+    let MINT_ROLE, ISSUE_ROLE, ASSIGN_ROLE, REVOKE_VESTINGS_ROLE, BURN_ROLE, SET_HOOK_ROLE
     let ETH
 
     // Error strings
@@ -63,6 +66,7 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
         ASSIGN_ROLE = await tokenManagerBase.ASSIGN_ROLE()
         REVOKE_VESTINGS_ROLE = await tokenManagerBase.REVOKE_VESTINGS_ROLE()
         BURN_ROLE = await tokenManagerBase.BURN_ROLE()
+        SET_HOOK_ROLE = await tokenManagerBase.SET_HOOK_ROLE()
 
         const ethConstant = await EtherTokenConstantMock.new()
         ETH = await ethConstant.getETHConstant()
@@ -84,8 +88,9 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
         await acl.createPermission(ANY_ADDR, tokenManager.address, ASSIGN_ROLE, root, { from: root })
         await acl.createPermission(ANY_ADDR, tokenManager.address, REVOKE_VESTINGS_ROLE, root, { from: root })
         await acl.createPermission(ANY_ADDR, tokenManager.address, BURN_ROLE, root, { from: root })
+        await acl.createPermission(ANY_ADDR, tokenManager.address, SET_HOOK_ROLE, root, { from: root })
 
-        token = await MiniMeToken.new(n, n, 0, 'n', 0, 'n', true)
+        token = await MiniMeToken.new(ZERO_ADDR, ZERO_ADDR, 0, 'n', 0, 'n', true)
     })
 
     it('checks it is forwarder', async () => {
@@ -460,6 +465,114 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
             const script = encodeCallScript([action])
 
             await assertRevert(tokenManager.forward(script, { from: anyone }), errors.TM_CAN_NOT_FORWARD)
+        })
+    })
+
+    context('with hooks', async () => {
+
+        let hook0, hook1, hook2
+
+        beforeEach(async () => {
+            await token.changeController(tokenManager.address)
+            await tokenManager.initialize(token.address, true, 0)
+
+            hook0 = await TokenManagerHook.new(0)
+            hook1 = await TokenManagerHook.new(1)
+            hook2 = await TokenManagerHook.new(2)
+            await tokenManager.registerHook(hook0.address)
+            await tokenManager.registerHook(hook1.address)
+            await tokenManager.registerHook(hook2.address)
+            await tokenManager.revokeHook(1)
+        })
+
+        it('can register hooks', async () => {
+            const hook3 = await TokenManagerHook.new(3)
+            const { receipt } = await tokenManager.registerHook(hook3.address)
+            assert.equal(parseInt(getTopicArgument(receipt, 'RegisterHooked(uint256)', 1)), 3)
+        })
+
+        it('can revoke hooks', async () => {
+            const { receipt } = await tokenManager.revokeHook(0)
+            assert.equal(parseInt(getTopicArgument(receipt, 'RevokeHooked(uint256)', 1)), 0)
+        })
+
+        it('calls onTransfer hook on token mintings', async () => {
+            const { receipt } = await tokenManager.mint(holder, 10)
+            assert.equal(parseInt(getTopicArgument(receipt, 'TransferHooked(uint256,address,address)', 1, 0)), 0)
+            assert.equal(parseInt(getTopicArgument(receipt, 'TransferHooked(uint256,address,address)', 1, 1)), 2)
+
+            // Transfer from 0x0 to holder
+            assert.equal(getTopicArgumentAsAddr(receipt, 'TransferHooked(uint256,address,address)', 2), ZERO_ADDR)
+            assert.equal(getTopicArgumentAsAddr(receipt, 'TransferHooked(uint256,address,address)', 3), holder)
+            assert.equal(await token.balanceOf(holder), 10)
+        })
+
+        it('calls onTransfer hook on token transfers', async () => {
+            const { receipt: receipt1 } = await tokenManager.issue(10)
+            assert.equal(parseInt(getTopicArgument(receipt1, 'TransferHooked(uint256,address,address)', 1, 0)), 0)
+            assert.equal(parseInt(getTopicArgument(receipt1, 'TransferHooked(uint256,address,address)', 1, 1)), 2)
+
+            const { receipt: receipt2 } = await tokenManager.assign(holder, 5)
+            assert.equal(parseInt(getTopicArgument(receipt2, 'TransferHooked(uint256,address,address)', 1, 0)), 0)
+            assert.equal(parseInt(getTopicArgument(receipt2, 'TransferHooked(uint256,address,address)', 1, 1)), 2)
+
+            assert.equal(await token.balanceOf(tokenManager.address), 5, 'Token Manager balance before transfer')
+
+            const { receipt: receipt3 } = await token.transfer(tokenManager.address, 5, { from: holder })
+            assert.equal(parseInt(getTopicArgument(receipt3, 'TransferHooked(uint256,address,address)', 1, 0)), 0)
+            assert.equal(parseInt(getTopicArgument(receipt3, 'TransferHooked(uint256,address,address)', 1, 1)), 2)
+
+            // Transfer from holder to token manager
+            assert.equal(getTopicArgumentAsAddr(receipt3, 'TransferHooked(uint256,address,address)', 2), holder)
+            assert.equal(getTopicArgumentAsAddr(receipt3, 'TransferHooked(uint256,address,address)', 3), tokenManager.address)
+            
+            assert.equal(await token.balanceOf(tokenManager.address), 10, 'Token Manager balance after transfer')
+        })
+
+        it('calls onTransfer hook on token burnings', async () => {
+            await tokenManager.mint(holder, 10)
+            const { receipt } = await tokenManager.burn(holder, 10)
+            assert.equal(parseInt(getTopicArgument(receipt, 'TransferHooked(uint256,address,address)', 1, 0)), 0)
+            assert.equal(parseInt(getTopicArgument(receipt, 'TransferHooked(uint256,address,address)', 1, 1)), 2)
+
+            // Transfer from holder to token manager
+            assert.equal(getTopicArgumentAsAddr(receipt, 'TransferHooked(uint256,address,address)', 2), holder)
+            assert.equal(getTopicArgumentAsAddr(receipt, 'TransferHooked(uint256,address,address)', 3), ZERO_ADDR)
+            assert.equal(await token.balanceOf(holder), 0)
+        })
+
+        it('calls onApprove hook on token approvals', async () => {
+            const { receipt } = await token.approve(holder2, 10, { from: holder })
+            assert.equal(parseInt(getTopicArgument(receipt, 'ApproveHooked(uint256)', 1, 0)), 0)
+            assert.equal(parseInt(getTopicArgument(receipt, 'ApproveHooked(uint256)', 1, 1)), 2)
+        })
+
+        context('for vesting', async () => {
+            const CLIFF_DURATION = 2000
+            const VESTING_DURATION = 5000
+
+            const startDate = NOW + 1000
+            const cliffDate = NOW + CLIFF_DURATION
+            const vestingDate = NOW + VESTING_DURATION
+
+            const totalTokens = 40
+            const revokable = true
+
+            beforeEach(async () => {
+                await tokenManager.issue(totalTokens)
+            })
+            it('calls onTransfer hook when assigning vested', async () => {
+                const { receipt } = await tokenManager.assignVested(holder, totalTokens, startDate, cliffDate, vestingDate, revokable)
+                assert.equal(parseInt(getTopicArgument(receipt, 'TransferHooked(uint256,address,address)', 1, 0)), 0)
+                assert.equal(parseInt(getTopicArgument(receipt, 'TransferHooked(uint256,address,address)', 1, 1)), 2)
+            })
+            it('calls onTransfer hook when revoking vesting', async () => {
+                await tokenManager.assignVested(holder, totalTokens, startDate, cliffDate, vestingDate, revokable)
+                await tokenManager.mockIncreaseTime(CLIFF_DURATION)
+                const { receipt } = await tokenManager.revokeVesting(holder, 0)
+                assert.equal(parseInt(getTopicArgument(receipt, 'TransferHooked(uint256,address,address)', 1, 0)), 0)
+                assert.equal(parseInt(getTopicArgument(receipt, 'TransferHooked(uint256,address,address)', 1, 1)), 2)
+            })
         })
     })
 })

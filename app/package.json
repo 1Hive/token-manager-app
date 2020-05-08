@@ -25,6 +25,7 @@
     "babel-preset-env": "^1.6.1",
     "babel-preset-react": "^6.24.1",
     "babel-preset-stage-2": "^6.24.1",
+    "copyfiles": "^2.2.0",
     "eslint": "5.5.0",
     "eslint-config-prettier": "^3.0.1",
     "eslint-config-standard": "^12.0.0",
@@ -43,12 +44,13 @@
   "scripts": {
     "test": "jest",
     "lint": "eslint ./src",
-    "start": "npm run sync-assets && npm run watch:script & parcel serve index.html -p 3003 --out-dir build/",
-    "build": "npm run sync-assets && npm run build:script && parcel build index.html --out-dir build/ --public-url \".\"",
-    "build:script": "parcel build src/script.js --out-dir build/",
-    "watch:script": "parcel watch src/script.js --out-dir build/ --no-hmr",
-    "sync-assets": "copy-aragon-ui-assets -n aragon-ui ./build && rsync -rtu ./public/ ./build",
-    "now-build": "npm run build"
+    "build": "npm run sync-assets && npm run build:app && npm run build:script",
+    "build:app": "parcel build index.html -d ../dist/ --public-url \".\" --no-cache",
+    "build:script": "parcel build src/script.js --out-dir ../dist/ --no-cache",
+    "watch:script": "parcel watch src/script.js --out-dir ../dist/ --no-hmr",
+    "devserver": "parcel serve index.html -p 8001 --out-dir ../dist/ --no-cache",
+    "start": "npm run sync-assets && npm run watch:script & npm run devserver",
+    "sync-assets": "copy-aragon-ui-assets ../dist && copyfiles -u 1 './public/**/*' ../dist"
   },
   "browserslist": [
     ">2%",

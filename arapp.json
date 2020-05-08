@@ -58,7 +58,14 @@
         "Holder",
         "Token amount"
       ]
+    },
+    {
+      "name": "Set hooks",
+      "id": "SET_HOOK_ROLE",
+      "params": [
+        "Hook"
+      ]
     }
   ],
-  "path": "contracts/TokenManager.sol"
+  "path": "contracts/HookedTokenManager.sol"
 }
