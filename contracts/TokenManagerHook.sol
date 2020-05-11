@@ -19,7 +19,6 @@ contract TokenManagerHook is ReentrancyGuard {
     }
     /*
     * @dev Called when this contract has been included as a Token Manager hook
-    * @param _tokenManager Token Manager instance that has included the hook
     * @param _hookId The position in which the hook is going to be called
     * @param _token The token controlled by the Token Manager
     */
@@ -31,7 +30,6 @@ contract TokenManagerHook is ReentrancyGuard {
 
     /*
     * @dev Called when this hook is being removed from the Token Manager
-    * @param _tokenManager Token Manager that removes the hook
     * @param _hookId The position in which the hook is going to be called
     * @param _token The token controlled by the Token Manager
     */
