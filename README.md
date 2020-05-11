@@ -2,9 +2,9 @@
 
 1Hive's Tokens app is a fork of [Aragon Token Manager](https://github.com/aragon/aragon-apps/tree/master/apps/token-manager) which is used to manage the supply and distribution of an organization's token.
 
-#### 🐲 Project Stage: Development
+#### 🐲 Project Stage: Rinkeby
 
-The 1Hive Tokens app is still in development. If you are interested in contributing please see our [open issues](https://github.com/1hive/token-manager-app/issues).
+The 1Hive Tokens app has been published to `open.aragonpm.eth` on Rinkeby network. If you experience any issues or are interested in contributing please see review our [open issues](https://github.com/1hive/token-manager-app/issues).
 
 #### 🚨 Security Review Status: pre-audit
 
@@ -44,6 +44,12 @@ You can see it published with this command:
 ```sh
 npx aragon apm packages open.aragonpm.eth
 ```
+
+## How to deploy 1Hive Tokens to an organization
+
+1Hive Tokens has been published to APM on Rinkeby at `hooked-token-manager.open.aragonpm.eth`.
+
+It can be used as a regular Token Manager, but define an extra ROLE (`SET_HOOK_ROLE`), and two new functions (`registerHook(address)` and `revokeHook(uint256)`).
 
 ## Contributing
 
