@@ -6,15 +6,20 @@ pragma solidity 0.4.24;
 
 import "@aragon/os/contracts/common/ReentrancyGuard.sol";
 
-
 /**
 * @dev When creating a subcontract, we recommend overriding the _internal_ functions that you want to hook.
 */
 contract TokenManagerHook is ReentrancyGuard {
-    address private tokenManager;
+
+    using UnstructuredStorage for bytes32;
+
+    /* Hardcoded constants to save gas
+    bytes32 public constant TOKEN_MANAGER_POSITION = keccak256("hookedTokenManager.tokenManagerHook.tokenManager");
+    */
+    bytes32 private constant TOKEN_MANAGER_POSITION = 0x5c513b2347f66d33af9d68f4a0ed7fbb73ce364889b2af7f3ee5764440da6a8a;
 
     modifier onlyTokenManager () {
-        require (tokenManager == msg.sender, "Hooks must be called from Token Manager");
+        require (TOKEN_MANAGER_POSITION.getStorageAddress() == msg.sender, "Hooks must be called from Token Manager");
         _;
     }
     /*
@@ -23,8 +28,8 @@ contract TokenManagerHook is ReentrancyGuard {
     * @param _token The token controlled by the Token Manager
     */
     function onRegisterAsHook(uint256 _hookId, address _token) external nonReentrant {
-        require(tokenManager == 0x0, "Hook already registered by Token Manager");
-        tokenManager = msg.sender;
+        require(TOKEN_MANAGER_POSITION.getStorageAddress() == 0x0, "Hook already registered by Token Manager");
+        TOKEN_MANAGER_POSITION.setStorageAddress(msg.sender);
         _onRegisterAsHook(msg.sender, _hookId, _token);
     }
 
