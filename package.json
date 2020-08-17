@@ -1,6 +1,6 @@
 {
   "name": "@1hive/apps-token-manager",
-  "version": "2.1.0",
+  "version": "2.3.0",
   "main": "index.js",
   "scripts": {
     "compile": "truffle compile",
@@ -53,6 +53,6 @@
   "dependencies": {
     "@aragon/apps-shared-minime": "1.0.0",
     "@aragon/apps-token-manager": "^2.1.0",
-    "@aragon/os": "4.2.0"
+    "@aragon/os": "5.0.0-beta.6"
   }
 }

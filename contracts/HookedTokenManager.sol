@@ -7,7 +7,7 @@
 pragma solidity 0.4.24;
 
 import "@aragon/os/contracts/apps/AragonApp.sol";
-import "@aragon/os/contracts/common/IForwarder.sol";
+import "@aragon/os/contracts/forwarding/IForwarder.sol";
 
 import "@aragon/os/contracts/lib/math/SafeMath.sol";
 
@@ -281,8 +281,8 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
     * @dev IForwarder interface conformance. Forwards any token holder action.
     * @param _evmScript Script being executed
     */
-    function forward(bytes _evmScript) public {
-        require(canForward(msg.sender, _evmScript), ERROR_CAN_NOT_FORWARD);
+    function forward(bytes _evmScript) external {
+        require(_canForward(msg.sender), ERROR_CAN_NOT_FORWARD);
         bytes memory input = new bytes(0); // TODO: Consider input for this
 
         // Add the managed token to the blacklist to disallow a token holder from executing actions
@@ -293,8 +293,8 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
         runScript(_evmScript, input, blacklist);
     }
 
-    function canForward(address _sender, bytes) public view returns (bool) {
-        return hasInitialized() && token.balanceOf(_sender) > 0;
+    function canForward(address _sender, bytes) external view returns (bool) {
+        return _canForward(_sender);
     }
 
     // Getter fns
@@ -469,5 +469,9 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
             }
             i++;
         }
+    }
+
+    function _canForward(address _sender) internal view returns (bool) {
+        return hasInitialized() && token.balanceOf(_sender) > 0;
     }
 }
