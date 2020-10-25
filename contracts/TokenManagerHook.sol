@@ -18,17 +18,22 @@ contract TokenManagerHook is ReentrancyGuard {
     */
     bytes32 private constant TOKEN_MANAGER_POSITION = 0x5c513b2347f66d33af9d68f4a0ed7fbb73ce364889b2af7f3ee5764440da6a8a;
 
-    modifier onlyTokenManager () {
-        require (TOKEN_MANAGER_POSITION.getStorageAddress() == msg.sender, "Hooks must be called from Token Manager");
+    modifier onlyTokenManager() {
+        require (getTokenManager() == msg.sender, "Hooks must be called from Token Manager");
         _;
     }
+
+    function getTokenManager() public returns (address) {
+        return TOKEN_MANAGER_POSITION.getStorageAddress();
+    }
+
     /*
     * @dev Called when this contract has been included as a Token Manager hook
     * @param _hookId The position in which the hook is going to be called
     * @param _token The token controlled by the Token Manager
     */
     function onRegisterAsHook(uint256 _hookId, address _token) external nonReentrant {
-        require(TOKEN_MANAGER_POSITION.getStorageAddress() == 0x0, "Hook already registered by Token Manager");
+        require(getTokenManager() == address(0), "Hook already registered by Token Manager");
         TOKEN_MANAGER_POSITION.setStorageAddress(msg.sender);
         _onRegisterAsHook(msg.sender, _hookId, _token);
     }
