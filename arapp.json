@@ -65,6 +65,13 @@
       "params": [
         "Hook"
       ]
+    },
+    {
+      "name": "Change token controller",
+      "id": "CHANGE_CONTROLLER_ROLE",
+      "params": [
+        "New controller"
+      ]
     }
   ],
   "path": "contracts/HookedTokenManager.sol"

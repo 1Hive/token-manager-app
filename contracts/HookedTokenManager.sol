@@ -20,6 +20,7 @@ import "./TokenManagerHook.sol";
 contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
     using SafeMath for uint256;
 
+    bytes32 public constant CHANGE_CONTROLLER_ROLE = keccak256("CHANGE_CONTROLLER_ROLE");
     bytes32 public constant MINT_ROLE = keccak256("MINT_ROLE");
     bytes32 public constant ISSUE_ROLE = keccak256("ISSUE_ROLE");
     bytes32 public constant ASSIGN_ROLE = keccak256("ASSIGN_ROLE");
@@ -100,6 +101,14 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
         if (token.transfersEnabled() != _transferable) {
             token.enableTransfers(_transferable);
         }
+    }
+
+    /**
+    * @notice Change the token controller to `_newController`
+    * @param _newController Address to transfer control of the token
+    */
+    function changeTokenController(address _newController) external authP(CHANGE_CONTROLLER_ROLE, arr(_newController)) {
+        token.changeController(_newController);
     }
 
     /**
