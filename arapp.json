@@ -15,6 +15,11 @@
       "registry": "0x98Df287B6C145399Aaa709692c8D308357bC085D",
       "appName": "hooked-token-manager.open.aragonpm.eth",
       "network": "rinkeby"
+    },
+    "xdai": {
+      "registry": "0xaafca6b0c89521752e559650206d7c925fd0e530",
+      "appName": "hooked-token-manager.open.aragonpm.eth",
+      "network": "xdai"
     }
   },
   "roles": [

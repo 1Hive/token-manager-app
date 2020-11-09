@@ -8,11 +8,13 @@
     "@aragon/api-react": "^2.0.0-beta.9",
     "@aragon/ui": "^1.4.2",
     "bn.js": "^4.11.6",
+    "core-js": "3.6.5",
     "dayjs": "^1.8.27",
     "prop-types": "^15.7.2",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-spring": "^7.2.10",
+    "regenerator-runtime": "0.13.5",
     "rxjs": "^6.2.1",
     "styled-components": "^5.1.0",
     "web3-utils": "^1.0.0-beta.30"
@@ -49,8 +51,9 @@
     "build:app": "parcel build index.html -d ../dist/ --public-url \".\" --no-cache",
     "build:script": "parcel build src/script.js --out-dir ../dist/ --no-cache",
     "watch:script": "parcel watch src/script.js --out-dir ../dist/ --no-hmr",
-    "devserver": "parcel serve index.html -p 8001 --out-dir ../dist/ --no-cache",
-    "start": "npm run sync-assets && npm run watch:script & npm run devserver",
+    "serve": "parcel serve index.html --out-dir ../dist/ --no-cache",
+    "watch": "npm run watch:script",
+    "start": "npm run sync-assets && npm run watch:script & npm run serve",
     "sync-assets": "copy-aragon-ui-assets ../dist && copyfiles -u 1 './public/**/*' ../dist"
   },
   "browserslist": [
