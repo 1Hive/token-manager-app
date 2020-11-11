@@ -87,5 +87,25 @@ module.exports = {
   },
 
   // Called after the app's proxy is updated with a new implementation.
-  postUpdate: async ({ proxy, log }, { web3, artifacts }) => {},
+  // TODO: At the moment we don't have permissions to issue or assign tokens
+  // outside this hook: https://github.com/aragon/buidler-aragon/issues/143 
+  postUpdate: async ({ proxy, log }, { web3, artifacts }) => {
+    // Add vestings
+    const DAYS = 24 * 60 * 60
+    const NOW = Math.floor(Date.now() / 1000)
+    const VESTING_CLIFF_PERIOD = 90 * DAYS
+    const VESTING_COMPLETE_PERIOD = 360 * DAYS
+    const accounts = await web3.eth.getAccounts()
+    await proxy.issue('2000000000000000000')
+    for (let i = 0; i < 2; i++) {
+      await proxy.assignVested(
+        accounts[i],
+        '1000000000000000000',
+        NOW,
+        NOW + VESTING_CLIFF_PERIOD,
+        NOW + VESTING_CLIFF_PERIOD + VESTING_COMPLETE_PERIOD,
+        true // revokable
+      )
+    }
+  },
 }
