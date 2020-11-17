@@ -21,10 +21,10 @@ const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
 const ANY_ADDR = '0xffffffffffffffffffffffffffffffffffffffff'
 
 contract('Token Manager', ([root, holder, holder2, anyone]) => {
-    let tokenManagerBase, daoFact, tokenManager, token
+    let tokenManagerBase, daoFact, tokenManager, token, acl
 
     let APP_MANAGER_ROLE
-    let MINT_ROLE, ISSUE_ROLE, ASSIGN_ROLE, REVOKE_VESTINGS_ROLE, BURN_ROLE, SET_HOOK_ROLE
+    let CHANGE_CONTROLLER_ROLE, MINT_ROLE, ISSUE_ROLE, ASSIGN_ROLE, REVOKE_VESTINGS_ROLE, BURN_ROLE, SET_HOOK_ROLE
     let ETH
 
     // Error strings
@@ -61,6 +61,7 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
 
         // Setup constants
         APP_MANAGER_ROLE = await kernelBase.APP_MANAGER_ROLE()
+        CHANGE_CONTROLLER_ROLE = await tokenManagerBase.CHANGE_CONTROLLER_ROLE()
         MINT_ROLE = await tokenManagerBase.MINT_ROLE()
         ISSUE_ROLE = await tokenManagerBase.ISSUE_ROLE()
         ASSIGN_ROLE = await tokenManagerBase.ASSIGN_ROLE()
@@ -75,7 +76,7 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
     beforeEach(async () => {
         const r = await daoFact.newDAO(root)
         const dao = Kernel.at(getEventArgument(r, 'DeployDAO', 'dao'))
-        const acl = ACL.at(await dao.acl())
+        acl = ACL.at(await dao.acl())
 
         await acl.createPermission(root, dao.address, APP_MANAGER_ROLE, root, { from: root })
 
@@ -83,6 +84,7 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
         tokenManager = TokenManager.at(getNewProxyAddress(receipt))
         tokenManager.mockSetTimestamp(NOW)
 
+        await acl.createPermission(ANY_ADDR, tokenManager.address, CHANGE_CONTROLLER_ROLE, root, { from: root })
         await acl.createPermission(ANY_ADDR, tokenManager.address, MINT_ROLE, root, { from: root })
         await acl.createPermission(ANY_ADDR, tokenManager.address, ISSUE_ROLE, root, { from: root })
         await acl.createPermission(ANY_ADDR, tokenManager.address, ASSIGN_ROLE, root, { from: root })
@@ -573,6 +575,30 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
                 assert.equal(parseInt(getTopicArgument(receipt, 'TransferHooked(uint256,address,address)', 1, 0)), 0)
                 assert.equal(parseInt(getTopicArgument(receipt, 'TransferHooked(uint256,address,address)', 1, 1)), 2)
             })
+        })
+    })
+
+    context('changeTokenController()', () => {
+
+        beforeEach(async () => {
+            await token.changeController(tokenManager.address)
+            await tokenManager.initialize(token.address, true, 0)
+        })
+
+        it('reverts when no permission', async () => {
+            await acl.revokePermission(ANY_ADDR, tokenManager.address, CHANGE_CONTROLLER_ROLE)
+            await assertRevert(tokenManager.changeTokenController(anyone), "APP_AUTH_FAILED")
+        })
+
+        it('changes token controller', async () => {
+            assert.equal(await token.controller(), tokenManager.address, 'Incorrect token controller before')
+            await tokenManager.changeTokenController(anyone)
+            assert.equal(await token.controller(), anyone, 'Incorrect token controller after')
+        })
+
+        it('cannot mint after changed', async () => {
+            await tokenManager.changeTokenController(anyone)
+            await assertRevert(tokenManager.mint(anyone, 100))
         })
     })
 })
