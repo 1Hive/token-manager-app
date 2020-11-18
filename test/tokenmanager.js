@@ -4,6 +4,7 @@ const { getTopics, getTopicAt, getTopicArgument, getTopicArgumentAsAddr } = requ
 const { injectWeb3, injectArtifacts, ZERO_ADDRESS, getEvents,
   getEventAt, getEventArgument } = require('@aragon/contract-helpers-test')
 const { ANY_ENTITY, newDao, installNewApp, encodeCallScript } = require('@aragon/contract-helpers-test/src/aragon-os')
+const { assert } = require('chai')
 
 injectWeb3(web3)
 injectArtifacts(artifacts)
@@ -14,7 +15,7 @@ const MiniMeToken = artifacts.require('MiniMeToken')
 const TokenManagerHook = artifacts.require('TokenManagerHookMock')
 
 contract('Token Manager', ([root, holder, holder2, anyone]) => {
-  let tokenManagerBase, tokenManager, token
+  let dao, acl, tokenManagerBase, tokenManager, token
   let MINT_ROLE, ISSUE_ROLE, ASSIGN_ROLE, REVOKE_VESTINGS_ROLE, BURN_ROLE, SET_HOOK_ROLE, CHANGE_CONTROLLER_ROLE
 
   const NOW = 1
@@ -33,7 +34,7 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
   })
 
   beforeEach('deploy DAO with token manager', async () => {
-    const { dao, acl } = await newDao(root)
+    ({ dao, acl } = await newDao(root))
     tokenManager = await TokenManager.at(await installNewApp(dao, APP_ID, tokenManagerBase.address, root))
 
     tokenManager.mockSetTimestamp(NOW)
@@ -533,26 +534,28 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
 
     context('changeTokenController()', () => {
 
-        beforeEach(async () => {
-            await token.changeController(tokenManager.address)
-            await tokenManager.initialize(token.address, true, 0)
-        })
+      it('reverts when no permission', async () => {
+        await acl.revokePermission(ANY_ENTITY, tokenManager.address, CHANGE_CONTROLLER_ROLE)
+        await assertRevert(tokenManager.changeTokenController(anyone), "APP_AUTH_FAILED")
+      })
 
-        it('reverts when no permission', async () => {
-            await acl.revokePermission(ANY_ADDR, tokenManager.address, CHANGE_CONTROLLER_ROLE)
-            await assertRevert(tokenManager.changeTokenController(anyone), "APP_AUTH_FAILED")
-        })
+      it('changes token controller', async () => {
+        const { dao: dao2, acl: acl2 } = await newDao(root)
+        const tokenManager2 = await TokenManager.at(await installNewApp(dao2, APP_ID, tokenManagerBase.address, root))
+        tokenManager2.mockSetTimestamp(NOW)
+        await acl2.createPermission(ANY_ENTITY, tokenManager2.address, MINT_ROLE, root, { from: root })
+        assert.equal(await token.controller(), tokenManager.address, 'Incorrect token controller before')
+        await tokenManager.changeTokenController(tokenManager2.address)
+        assert.equal(await token.controller(), tokenManager2.address, 'Incorrect token controller after')
+        await tokenManager2.initialize(token.address, true, 0)
+        await tokenManager2.mint(anyone, 100)
+        assert.equal(await token.balanceOf(anyone), 100, "New token manager can't control")
+      })
 
-        it('changes token controller', async () => {
-            assert.equal(await token.controller(), tokenManager.address, 'Incorrect token controller before')
-            await tokenManager.changeTokenController(anyone)
-            assert.equal(await token.controller(), anyone, 'Incorrect token controller after')
-        })
-
-        it('cannot mint after changed', async () => {
-            await tokenManager.changeTokenController(anyone)
-            await assertRevert(tokenManager.mint(anyone, 100))
-        })
+      it('cannot mint after changed', async () => {
+        await tokenManager.changeTokenController(anyone)
+        await assertRevert(tokenManager.mint(anyone, 100))
+      })
     })
   })
 })
