@@ -27,6 +27,8 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
     bytes32 public constant REVOKE_VESTINGS_ROLE = keccak256("REVOKE_VESTINGS_ROLE");
     bytes32 public constant BURN_ROLE = keccak256("BURN_ROLE");
     bytes32 public constant SET_HOOK_ROLE = keccak256("SET_HOOK_ROLE");
+    bytes32 public constant TOGGLE_TRANSFERS_ROLE = keccak256("TOGGLE_TRANSFERS_ROLE");
+    bytes32 public constant SET_MAX_TOKENS_ROLE = keccak256("SET_MAX_TOKENS_ROLE");
 
     uint256 public constant MAX_VESTINGS_PER_ADDRESS = 50;
 
@@ -109,6 +111,24 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
     */
     function changeTokenController(address _newController) external authP(CHANGE_CONTROLLER_ROLE, arr(_newController)) {
         token.changeController(_newController);
+    }
+
+    /**
+    * @notice `_transferable : 'Enable' : 'Diable'` transfers for `self.token().symbol(): string`
+    * @param _transferable whether the token can be transferred by holders
+    */
+    function enableTransfers(bool _transferable) external authP(TOGGLE_TRANSFERS_ROLE, arr(uint256(_transferable ? 1 : 0))) {
+        if (token.transfersEnabled() != _transferable) {
+            token.enableTransfers(_transferable);
+        }
+    }
+
+    /**
+    * @notice `_maxAccountTokens > 0 ? 'Limit to a maximum of ' + @tokenAmount(self.token(): address, _maxAccountTokens, false) + ' per account' : 'Remove maximum amount of tokens per account limit'`
+    * @param _maxAccountTokens Maximum amount of tokens an account can have (0 for infinite tokens)
+    */
+    function setMaxAccountTokens(uint256 _maxAccountTokens) external authP(SET_MAX_TOKENS_ROLE, arr(_maxAccountTokens)) {
+        maxAccountTokens = _maxAccountTokens == 0 ? uint256(-1) : _maxAccountTokens;
     }
 
     /**

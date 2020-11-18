@@ -16,7 +16,7 @@ const TokenManagerHook = artifacts.require('TokenManagerHookMock')
 
 contract('Token Manager', ([root, holder, holder2, anyone]) => {
   let dao, acl, tokenManagerBase, tokenManager, token
-  let MINT_ROLE, ISSUE_ROLE, ASSIGN_ROLE, REVOKE_VESTINGS_ROLE, BURN_ROLE, SET_HOOK_ROLE, CHANGE_CONTROLLER_ROLE
+  let MINT_ROLE, ISSUE_ROLE, ASSIGN_ROLE, REVOKE_VESTINGS_ROLE, BURN_ROLE, SET_HOOK_ROLE, CHANGE_CONTROLLER_ROLE, TOGGLE_TRANSFERS_ROLE, SET_MAX_TOKENS_ROLE
 
   const NOW = 1
   const ETH = ZERO_ADDRESS
@@ -31,6 +31,8 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
     BURN_ROLE = await tokenManagerBase.BURN_ROLE()
     SET_HOOK_ROLE = await tokenManagerBase.SET_HOOK_ROLE()
     CHANGE_CONTROLLER_ROLE = await tokenManagerBase.CHANGE_CONTROLLER_ROLE()
+    TOGGLE_TRANSFERS_ROLE = await tokenManagerBase.TOGGLE_TRANSFERS_ROLE()
+    SET_MAX_TOKENS_ROLE = await tokenManagerBase.SET_MAX_TOKENS_ROLE()
   })
 
   beforeEach('deploy DAO with token manager', async () => {
@@ -46,6 +48,8 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
     await acl.createPermission(ANY_ENTITY, tokenManager.address, BURN_ROLE, root, { from: root })
     await acl.createPermission(ANY_ENTITY, tokenManager.address, SET_HOOK_ROLE, root, { from: root })
     await acl.createPermission(ANY_ENTITY, tokenManager.address, CHANGE_CONTROLLER_ROLE, root, { from: root })
+    await acl.createPermission(ANY_ENTITY, tokenManager.address, TOGGLE_TRANSFERS_ROLE, root, { from: root })
+    await acl.createPermission(ANY_ENTITY, tokenManager.address, SET_MAX_TOKENS_ROLE, root, { from: root })
 
     token = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'n', 0, 'n', true)
   })
@@ -518,11 +522,13 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
       beforeEach(async () => {
         await tokenManager.issue(totalTokens)
       })
+
       it('calls onTransfer hook when assigning vested', async () => {
         const { receipt } = await tokenManager.assignVested(holder, totalTokens, startDate, cliffDate, vestingDate, revokable)
         assert.equal(parseInt(getTopicArgument(receipt, 'TransferHooked(uint256,address,address)', 1, 0)), 0)
         assert.equal(parseInt(getTopicArgument(receipt, 'TransferHooked(uint256,address,address)', 1, 1)), 2)
       })
+
       it('calls onTransfer hook when revoking vesting', async () => {
         await tokenManager.assignVested(holder, totalTokens, startDate, cliffDate, vestingDate, revokable)
         await tokenManager.mockIncreaseTime(CLIFF_DURATION)
@@ -555,6 +561,50 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
       it('cannot mint after changed', async () => {
         await tokenManager.changeTokenController(anyone)
         await assertRevert(tokenManager.mint(anyone, 100))
+      })
+    })
+
+    context('toggle transferability', () => {
+
+      it('reverts when no permission', async() => {
+        await acl.revokePermission(ANY_ENTITY, tokenManager.address, TOGGLE_TRANSFERS_ROLE)
+        await assertRevert(tokenManager.enableTransfers(false), "APP_AUTH_FAILED")
+      })
+
+      it('changes transferability', async() => {
+        // We can't transfer when false
+        await tokenManager.enableTransfers(false)
+        assertRevert(token.transfer(holder2, 1, { from: holder }))
+
+        // We can transfer when true
+        await tokenManager.enableTransfers(true)
+        await token.approve(holder2, 10, { from: holder })
+        await token.transfer(holder2, 1, { from: holder })
+      })
+
+    })
+
+    context('set max tokens per account', () => {
+
+      it('reverts when no permission', async() => {
+        await acl.revokePermission(ANY_ENTITY, tokenManager.address, SET_MAX_TOKENS_ROLE)
+        await assertRevert(tokenManager.setMaxAccountTokens(100), "APP_AUTH_FAILED")
+      })
+
+      it('sets max amount of tokens', async() => {
+        await tokenManager.setMaxAccountTokens(100)
+        await assertRevert(tokenManager.mint(anyone, 101), 'TM_BALANCE_INC_NOT_ALLOWED')
+        await tokenManager.mint(holder, 99)
+        await tokenManager.mint(holder2, 99)
+        await token.approve(anyone, 99, { from: holder })
+        await token.transfer(anyone, 99, { from: holder })
+        await token.approve(anyone, 99, { from: holder2 })
+        await assertRevert(token.transfer(holder2, 99, { from: holder2 }))
+      })
+
+      it('uses 0 as infinity', async() => {
+        await tokenManager.setMaxAccountTokens(0)
+        await tokenManager.mint(anyone, 100000000)
       })
     })
   })
