@@ -24,6 +24,13 @@
   },
   "roles": [
     {
+      "name": "Change token controller",
+      "id": "CHANGE_CONTROLLER_ROLE",
+      "params": [
+        "New controller"
+      ]
+    },
+    {
       "name": "Mint tokens",
       "id": "MINT_ROLE",
       "params": [
