@@ -15,7 +15,7 @@ const TokenManagerHook = artifacts.require('TokenManagerHookMock')
 
 contract('Token Manager', ([root, holder, holder2, anyone]) => {
   let tokenManagerBase, tokenManager, token
-  let MINT_ROLE, ISSUE_ROLE, ASSIGN_ROLE, REVOKE_VESTINGS_ROLE, BURN_ROLE, SET_HOOK_ROLE
+  let MINT_ROLE, ISSUE_ROLE, ASSIGN_ROLE, REVOKE_VESTINGS_ROLE, BURN_ROLE, SET_HOOK_ROLE, CHANGE_CONTROLLER_ROLE
 
   const NOW = 1
   const ETH = ZERO_ADDRESS
@@ -29,6 +29,7 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
     REVOKE_VESTINGS_ROLE = await tokenManagerBase.REVOKE_VESTINGS_ROLE()
     BURN_ROLE = await tokenManagerBase.BURN_ROLE()
     SET_HOOK_ROLE = await tokenManagerBase.SET_HOOK_ROLE()
+    CHANGE_CONTROLLER_ROLE = await tokenManagerBase.CHANGE_CONTROLLER_ROLE()
   })
 
   beforeEach('deploy DAO with token manager', async () => {
@@ -43,6 +44,7 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
     await acl.createPermission(ANY_ENTITY, tokenManager.address, REVOKE_VESTINGS_ROLE, root, { from: root })
     await acl.createPermission(ANY_ENTITY, tokenManager.address, BURN_ROLE, root, { from: root })
     await acl.createPermission(ANY_ENTITY, tokenManager.address, SET_HOOK_ROLE, root, { from: root })
+    await acl.createPermission(ANY_ENTITY, tokenManager.address, CHANGE_CONTROLLER_ROLE, root, { from: root })
 
     token = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'n', 0, 'n', true)
   })
@@ -527,6 +529,30 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
         assert.equal(parseInt(getTopicArgument(receipt, 'TransferHooked(uint256,address,address)', 1, 0)), 0)
         assert.equal(parseInt(getTopicArgument(receipt, 'TransferHooked(uint256,address,address)', 1, 1)), 2)
       })
+    })
+
+    context('changeTokenController()', () => {
+
+        beforeEach(async () => {
+            await token.changeController(tokenManager.address)
+            await tokenManager.initialize(token.address, true, 0)
+        })
+
+        it('reverts when no permission', async () => {
+            await acl.revokePermission(ANY_ADDR, tokenManager.address, CHANGE_CONTROLLER_ROLE)
+            await assertRevert(tokenManager.changeTokenController(anyone), "APP_AUTH_FAILED")
+        })
+
+        it('changes token controller', async () => {
+            assert.equal(await token.controller(), tokenManager.address, 'Incorrect token controller before')
+            await tokenManager.changeTokenController(anyone)
+            assert.equal(await token.controller(), anyone, 'Incorrect token controller after')
+        })
+
+        it('cannot mint after changed', async () => {
+            await tokenManager.changeTokenController(anyone)
+            await assertRevert(tokenManager.mint(anyone, 100))
+        })
     })
   })
 })
