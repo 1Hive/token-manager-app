@@ -24,7 +24,7 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
     let tokenManagerBase, daoFact, tokenManager, token, acl
 
     let APP_MANAGER_ROLE
-    let CHANGE_CONTROLLER_ROLE, MINT_ROLE, ISSUE_ROLE, ASSIGN_ROLE, REVOKE_VESTINGS_ROLE, BURN_ROLE, SET_HOOK_ROLE
+    let INIT_ROLE, CHANGE_CONTROLLER_ROLE, MINT_ROLE, ISSUE_ROLE, ASSIGN_ROLE, REVOKE_VESTINGS_ROLE, BURN_ROLE, SET_HOOK_ROLE
     let ETH
 
     // Error strings
@@ -61,6 +61,7 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
 
         // Setup constants
         APP_MANAGER_ROLE = await kernelBase.APP_MANAGER_ROLE()
+        INIT_ROLE = await tokenManagerBase.INIT_ROLE()
         CHANGE_CONTROLLER_ROLE = await tokenManagerBase.CHANGE_CONTROLLER_ROLE()
         MINT_ROLE = await tokenManagerBase.MINT_ROLE()
         ISSUE_ROLE = await tokenManagerBase.ISSUE_ROLE()
@@ -84,6 +85,7 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
         tokenManager = TokenManager.at(getNewProxyAddress(receipt))
         tokenManager.mockSetTimestamp(NOW)
 
+        await acl.createPermission(ANY_ADDR, tokenManager.address, INIT_ROLE, root, { from: root })
         await acl.createPermission(ANY_ADDR, tokenManager.address, CHANGE_CONTROLLER_ROLE, root, { from: root })
         await acl.createPermission(ANY_ADDR, tokenManager.address, MINT_ROLE, root, { from: root })
         await acl.createPermission(ANY_ADDR, tokenManager.address, ISSUE_ROLE, root, { from: root })
@@ -115,6 +117,15 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
         await token.changeController(tokenManager.address)
         await tokenManager.initialize(token.address, transferable, 0)
         assert.equal(transferable, await token.transfersEnabled())
+    })
+
+    it('fails when initializing without init permission', async () => {
+        const transferable = true
+        await token.enableTransfers(!transferable)
+        await token.changeController(tokenManager.address)
+        await acl.revokePermission(ANY_ADDR, tokenManager.address, INIT_ROLE)
+
+        await assertRevert(tokenManager.initialize(token.address, true, 0), 'TM_NO_INIT_PERMISSION')
     })
 
     it('fails when initializing without setting controller', async () => {
