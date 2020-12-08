@@ -4,6 +4,9 @@ build
 dist
 ipfs.cmd
 package-lock.json
+yarn.lock
 coverage.json
 coverage
 abi
+artifacts
+cache
