@@ -93,7 +93,7 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
     {
         initialized();
 
-        require(_token.controller() == address(this), ERROR_TOKEN_CONTROLLER);
+//        require(_token.controller() == address(this), ERROR_TOKEN_CONTROLLER);
 
         token = _token;
         maxAccountTokens = _maxAccountTokens == 0 ? uint256(-1) : _maxAccountTokens;

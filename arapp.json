@@ -13,7 +13,7 @@
     },
     "rinkeby": {
       "registry": "0x98Df287B6C145399Aaa709692c8D308357bC085D",
-      "appName": "hooked-token-manager.open.aragonpm.eth",
+      "appName": "hooked-token-manager-no-controller.open.aragonpm.eth",
       "network": "rinkeby"
     },
     "xdai": {
