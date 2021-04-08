@@ -18,6 +18,7 @@ export function getTemplateForApp(appId: string): string | null {
     appId ==
     "0x6b20a3010614eeebf2138ccec99f028a61c811b3b1a3343b6ff635985c75c91f"
   ) {
+    // token-manager.aragonpm.eth
     return "TokenManager";
   } else if (
     appId ==
