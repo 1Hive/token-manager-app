@@ -1,7 +1,7 @@
 import { Address } from '@graphprotocol/graph-ts'
 import {
   getTokenManagerEntity,
-  processOrphanTokenManagers
+  processOrphanTokenManagers,
 } from './TokenManager'
 
 /*
@@ -13,16 +13,18 @@ import {
  * The returned name is used to instantiate a template declared in the subgraph manifest file,
  * which must have the same name.
  */
-export function getTemplateForApp(appId: string): string | null {
-
-  const tokenManagers = [
-    '0x6b20a3010614eeebf2138ccec99f028a61c811b3b1a3343b6ff635985c75c91f', // token-manager.aragonpm.eth
-    '0xd8de493821904a0eae23e3a30ab559947038f8683de280e97f786d5b2ed59f7c', // token-manager.1hive.aragonpm.eth (first HookedTokenManager version)
-    '0xb2d2065b829a91588c8b9a15d99acd026f6673733603c6c60e505654eb2b472d', // hooked-token-manager.open.aragonpm.eth (new HookedTokenManager with a controller)
-    '0xa2a1b99c88fa1519d5f1a8efa0c90cfd0e570095d71a4d45850205108a8f9a70'  // hooked-token-manager-no-controller.open.aragonpm.eth (new HookedTokenManager without controller used for disputables & celeste deployment)
-  ]
-
-  if (tokenManagers.includes(appId)) {
+export function getTemplateForApp(appId: string): string | null { 
+  if (appId == '0x6b20a3010614eeebf2138ccec99f028a61c811b3b1a3343b6ff635985c75c91f') {
+    // token-manager.aragonpm.eth
+    return 'TokenManager'
+  } else if (appId == '0xd8de493821904a0eae23e3a30ab559947038f8683de280e97f786d5b2ed59f7c') {
+    // token-manager.1hive.aragonpm.eth (first HookedTokenManager version)
+    return 'TokenManager'
+  } else if (appId == '0xb2d2065b829a91588c8b9a15d99acd026f6673733603c6c60e505654eb2b472d') {
+    // hooked-token-manager.open.aragonpm.eth (new HookedTokenManager with a controller)
+    return 'TokenManager'
+  } else if (appId == '0xa2a1b99c88fa1519d5f1a8efa0c90cfd0e570095d71a4d45850205108a8f9a70') {
+    // hooked-token-manager-no-controller.open.aragonpm.eth (new HookedTokenManager without controller used for disputables & celeste deployment)
     return 'TokenManager'
   } else {
     return null
