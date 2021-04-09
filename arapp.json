@@ -74,6 +74,20 @@
       "params": [
         "Hook"
       ]
+    },
+    {
+      "name": "Toggle transferability",
+      "id": "TOGGLE_TRANSFERS_ROLE",
+      "params": [
+        "Transferable"
+      ]
+    },
+    {
+      "name": "Set max tokens per account",
+      "id": "SET_MAX_TOKENS_ROLE",
+      "params": [
+        "Max tokens per account"
+      ]
     }
   ]
 }
