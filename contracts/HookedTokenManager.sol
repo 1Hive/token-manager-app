@@ -20,6 +20,7 @@ import "./TokenManagerHook.sol";
 contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
     using SafeMath for uint256;
 
+    bytes32 public constant INIT_ROLE = keccak256("INIT_ROLE");
     bytes32 public constant CHANGE_CONTROLLER_ROLE = keccak256("CHANGE_CONTROLLER_ROLE");
     bytes32 public constant MINT_ROLE = keccak256("MINT_ROLE");
     bytes32 public constant ISSUE_ROLE = keccak256("ISSUE_ROLE");
@@ -30,6 +31,7 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
 
     uint256 public constant MAX_VESTINGS_PER_ADDRESS = 50;
 
+    string private constant ERROR_NO_INIT_PERMISSION = "TM_NO_INIT_PERMISSION";
     string private constant ERROR_CALLER_NOT_TOKEN = "TM_CALLER_NOT_TOKEN";
     string private constant ERROR_NO_VESTING = "TM_NO_VESTING";
     string private constant ERROR_TOKEN_CONTROLLER = "TM_TOKEN_CONTROLLER";
@@ -92,6 +94,7 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
         onlyInit
     {
         initialized();
+        require(canPerform(msg.sender, INIT_ROLE, new uint256[](0)), ERROR_NO_INIT_PERMISSION);
 
         require(_token.controller() == address(this), ERROR_TOKEN_CONTROLLER);
 

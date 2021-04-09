@@ -13,7 +13,7 @@
     },
     "rinkeby": {
       "registry": "0x98Df287B6C145399Aaa709692c8D308357bC085D",
-      "appName": "hooked-token-manager.open.aragonpm.eth",
+      "appName": "gardens-token-manager.open.aragonpm.eth",
       "network": "rinkeby"
     },
     "xdai": {
@@ -23,6 +23,11 @@
     }
   },
   "roles": [
+    {
+      "name": "Initialise token manager",
+      "id": "INIT_ROLE",
+      "params": []
+    },
     {
       "name": "Change token controller",
       "id": "CHANGE_CONTROLLER_ROLE",

@@ -16,7 +16,7 @@ const TokenManagerHook = artifacts.require('TokenManagerHookMock')
 
 contract('Token Manager', ([root, holder, holder2, anyone]) => {
   let dao, acl, tokenManagerBase, tokenManager, token
-  let MINT_ROLE, ISSUE_ROLE, ASSIGN_ROLE, REVOKE_VESTINGS_ROLE, BURN_ROLE, SET_HOOK_ROLE, CHANGE_CONTROLLER_ROLE
+  let INIT_ROLE, MINT_ROLE, ISSUE_ROLE, ASSIGN_ROLE, REVOKE_VESTINGS_ROLE, BURN_ROLE, SET_HOOK_ROLE, CHANGE_CONTROLLER_ROLE
 
   const NOW = 1
   const ETH = ZERO_ADDRESS
@@ -24,6 +24,7 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
 
   before('load roles', async () => {
     tokenManagerBase = await TokenManager.new()
+    INIT_ROLE = await tokenManagerBase.INIT_ROLE()
     MINT_ROLE = await tokenManagerBase.MINT_ROLE()
     ISSUE_ROLE = await tokenManagerBase.ISSUE_ROLE()
     ASSIGN_ROLE = await tokenManagerBase.ASSIGN_ROLE()
@@ -39,6 +40,7 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
 
     tokenManager.mockSetTimestamp(NOW)
 
+    await acl.createPermission(ANY_ENTITY, tokenManager.address, INIT_ROLE, root, { from: root })
     await acl.createPermission(ANY_ENTITY, tokenManager.address, MINT_ROLE, root, { from: root })
     await acl.createPermission(ANY_ENTITY, tokenManager.address, ISSUE_ROLE, root, { from: root })
     await acl.createPermission(ANY_ENTITY, tokenManager.address, ASSIGN_ROLE, root, { from: root })
@@ -70,6 +72,15 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
     await token.changeController(tokenManager.address)
     await tokenManager.initialize(token.address, transferable, 0)
     assert.equal(transferable, await token.transfersEnabled())
+  })
+
+  it('fails when initializing without init permission', async () => {
+    const transferable = true
+    await token.enableTransfers(!transferable)
+    await token.changeController(tokenManager.address)
+    await acl.revokePermission(ANY_ENTITY, tokenManager.address, INIT_ROLE)
+
+    await assertRevert(tokenManager.initialize(token.address, true, 0), 'TM_NO_INIT_PERMISSION')
   })
 
   it('fails when initializing without setting controller', async () => {
@@ -482,7 +493,7 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
       // Transfer from holder to token manager
       assert.equal(getTopicArgumentAsAddr(receipt3, 'TransferHooked(uint256,address,address)', 2), holder.toLowerCase())
       assert.equal(getTopicArgumentAsAddr(receipt3, 'TransferHooked(uint256,address,address)', 3), tokenManager.address.toLowerCase())
-      
+
       assert.equal(await token.balanceOf(tokenManager.address), 10, 'Token Manager balance after transfer')
     })
 
@@ -544,6 +555,7 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
         const tokenManager2 = await TokenManager.at(await installNewApp(dao2, APP_ID, tokenManagerBase.address, root))
         tokenManager2.mockSetTimestamp(NOW)
         await acl2.createPermission(ANY_ENTITY, tokenManager2.address, MINT_ROLE, root, { from: root })
+        await acl2.createPermission(ANY_ENTITY, tokenManager2.address, INIT_ROLE, root, { from: root })
         assert.equal(await token.controller(), tokenManager.address, 'Incorrect token controller before')
         await tokenManager.changeTokenController(tokenManager2.address)
         assert.equal(await token.controller(), tokenManager2.address, 'Incorrect token controller after')
