@@ -44,11 +44,10 @@ module.exports = {
       httpHeaders: { origin: 'buidler' },
       url: 'http://localhost:1248',
     },
-    // xDAI network configured with Aragon node.
     xdai: {
       url: 'https://xdai.poanetwork.dev',
       accounts: ACCOUNTS,
-      gasPrice: 20,
+      gasPrice: 1000000000,
       gas: 12000000,
     },
   },
