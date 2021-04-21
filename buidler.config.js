@@ -48,7 +48,7 @@ module.exports = {
     xdai: {
       url: 'https://xdai.poanetwork.dev',
       accounts: ACCOUNTS,
-      gasPrice: 20,
+      gasPrice: 1000000000,
       gas: 12000000,
     },
   },
