@@ -249,7 +249,7 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
     * @notice Wrap @tokenAmount(self.wrappableToken(): address, _amount, false) to receive @tokenAmount(self.token(): address, _amount, false)
     * @param _amount Amount of tokens to wrap
     */
-    function wrap(uint256 _amount) public {
+    function wrap(uint256 _amount) external {
         require(wrappableToken != address(0), ERROR_NO_WRAPPABLE_TOKEN);
         require(msg.sender != address(this), ERROR_MINT_RECEIVER_IS_TM);
 
@@ -261,12 +261,12 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
     * @notice Unwrap @tokenAmount(self.token(): address, _amount, false) to receive @tokenAmount(self.wrappableToken(): address, _amount, false)
     * @param _amount Amount of tokens to unwrap
     */
-    function unwrap(uint256 _amount) public {
+    function unwrap(uint256 _amount) external {
         require(wrappableToken != address(0), ERROR_NO_WRAPPABLE_TOKEN);
         require(msg.sender != address(this), ERROR_MINT_RECEIVER_IS_TM);
 
-        wrappableToken.safeTransfer(msg.sender, _amount);
         _burn(msg.sender, _amount);
+        wrappableToken.safeTransfer(msg.sender, _amount);
     }
 
     // ITokenController fns
