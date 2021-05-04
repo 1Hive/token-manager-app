@@ -39,6 +39,7 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
     string private constant ERROR_WRONG_CLIFF_DATE = "TM_WRONG_CLIFF_DATE";
     string private constant ERROR_VESTING_NOT_REVOKABLE = "TM_VESTING_NOT_REVOKABLE";
     string private constant ERROR_REVOKE_TRANSFER_FROM_REVERTED = "TM_REVOKE_TRANSFER_FROM_REVERTED";
+    string private constant ERROR_NO_WRAPPABLE_TOKEN = "TM_NO_WRAPPABLE_TOKEN";
     string private constant ERROR_CAN_NOT_FORWARD = "TM_CAN_NOT_FORWARD";
     string private constant ERROR_BALANCE_INCREASE_NOT_ALLOWED = "TM_BALANCE_INC_NOT_ALLOWED";
     string private constant ERROR_ASSIGN_TRANSFER_FROM_REVERTED = "TM_ASSIGN_TRANSFER_FROM_REVERTED";
@@ -53,6 +54,7 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
 
     // Note that we COMPLETELY trust this MiniMeToken to not be malicious for proper operation of this contract
     MiniMeToken public token;
+    ERC20 public wrappableToken;
     uint256 public maxAccountTokens;
 
     // We are mimicing an array in the inner mapping, we use a mapping instead to make app upgrade more graceful
@@ -80,11 +82,13 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
     /**
     * @notice Initialize Token Manager for `_token.symbol(): string`, whose tokens are `_transferable ? '' : 'not'` transferable`_maxAccountTokens > 0 ? ' and limited to a maximum of ' + @tokenAmount(_token, _maxAccountTokens, false) + ' per account' : ''`
     * @param _token MiniMeToken address for the managed token (Token Manager instance must be already set as the token controller)
+    * @param _wrappableToken Token which can be wrapped/unwrapped to generate an equal number of the MiniMeToken. Set to address(0) to disable.
     * @param _transferable whether the token can be transferred by holders
     * @param _maxAccountTokens Maximum amount of tokens an account can have (0 for infinite tokens)
     */
     function initialize(
         MiniMeToken _token,
+        ERC20 _wrappableToken,
         bool _transferable,
         uint256 _maxAccountTokens
     )
@@ -96,6 +100,7 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
         require(_token.controller() == address(this), ERROR_TOKEN_CONTROLLER);
 
         token = _token;
+        wrappableToken = _wrappableToken;
         maxAccountTokens = _maxAccountTokens == 0 ? uint256(-1) : _maxAccountTokens;
 
         if (token.transfersEnabled() != _transferable) {
@@ -240,6 +245,30 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
         emit RevokeVesting(_holder, _vestingId, nonVested);
     }
 
+    /**
+    * @notice Wrap @tokenAmount(self.wrappableToken(): address, _amount, false) to receive @tokenAmount(self.token(): address, _amount, false)
+    * @param _amount Amount of tokens to wrap
+    */
+    function wrap(uint256 _amount) external {
+        require(wrappableToken != address(0), ERROR_NO_WRAPPABLE_TOKEN);
+        require(msg.sender != address(this), ERROR_MINT_RECEIVER_IS_TM);
+
+        wrappableToken.safeTransferFrom(msg.sender, address(this), _amount);
+        _mint(msg.sender, _amount);
+    }
+
+    /**
+    * @notice Unwrap @tokenAmount(self.token(): address, _amount, false) to receive @tokenAmount(self.wrappableToken(): address, _amount, false)
+    * @param _amount Amount of tokens to unwrap
+    */
+    function unwrap(uint256 _amount) external {
+        require(wrappableToken != address(0), ERROR_NO_WRAPPABLE_TOKEN);
+        require(msg.sender != address(this), ERROR_MINT_RECEIVER_IS_TM);
+
+        _burn(msg.sender, _amount);
+        wrappableToken.safeTransfer(msg.sender, _amount);
+    }
+
     // ITokenController fns
     // `onTransfer()`, `onApprove()`, and `proxyPayment()` are callbacks from the MiniMe token
     // contract and are only meant to be called through the managed MiniMe token that gets assigned
@@ -344,7 +373,7 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
     *      as the it has the concept of issuing tokens without assigning them
     */
     function allowRecoverability(address _token) public view returns (bool) {
-        return _token != address(token);
+        return _token == ETH || (_token != address(token) && _token != address(wrappableToken));
     }
 
     // Internal fns

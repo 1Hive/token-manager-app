@@ -59,7 +59,7 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
     await token.enableTransfers(!transferable)
 
     await token.changeController(tokenManager.address)
-    await tokenManager.initialize(token.address, transferable, 0)
+    await tokenManager.initialize(token.address, ZERO_ADDRESS, transferable, 0)
     assert.equal(transferable, await token.transfersEnabled())
   })
 
@@ -68,16 +68,75 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
     await token.enableTransfers(!transferable)
 
     await token.changeController(tokenManager.address)
-    await tokenManager.initialize(token.address, transferable, 0)
+    await tokenManager.initialize(token.address, ZERO_ADDRESS, transferable, 0)
     assert.equal(transferable, await token.transfersEnabled())
   })
 
   it('fails when initializing without setting controller', async () => {
-    await assertRevert(tokenManager.initialize(token.address, true, 0), ERRORS.TM_TOKEN_CONTROLLER)
+    await assertRevert(tokenManager.initialize(token.address, ZERO_ADDRESS, true, 0), ERRORS.TM_TOKEN_CONTROLLER)
   })
 
   it('fails when sending ether to token', async () => {
     await assertRevert(token.send(1)) // transfer 1 wei to token contract
+  })
+
+  context('setting a wrappableToken', async () => {
+    context('when setting wrappableToken to zero address', async () => {
+      beforeEach(async () => {
+        await token.changeController(tokenManager.address)
+        await tokenManager.initialize(token.address, ZERO_ADDRESS, true, 0)
+      })
+
+      it('wrap fails', async () => {
+        await assertRevert(tokenManager.wrap(1), "TM_NO_WRAPPABLE_TOKEN")
+      })
+
+      it('unwrap fails', async () => {
+        await assertRevert(tokenManager.unwrap(1), "TM_NO_WRAPPABLE_TOKEN")
+      })
+    })
+
+    context('when setting wrappableToken', async () => {
+
+      let wrappableToken
+      const wrappableTokenBalance = 1000
+
+      beforeEach(async () => {
+        wrappableToken = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'n', 0, 'n', true)
+        await wrappableToken.generateTokens(root, wrappableTokenBalance)
+        await token.changeController(tokenManager.address)
+        await tokenManager.initialize(token.address, wrappableToken.address, true, 0)
+      })
+
+      it('wrap is successful', async () => {
+        const wrapAmount = 400
+        await wrappableToken.approve(tokenManager.address, wrappableTokenBalance)
+
+        await tokenManager.wrap(wrapAmount)
+
+        assert.equal(await token.balanceOf(root), wrapAmount, "Incorrect native token balance")
+        assert.equal(await wrappableToken.balanceOf(root), wrappableTokenBalance - wrapAmount, "Incorrect wrappable token balance")
+      })
+
+      it('unwrap is successful', async () => {
+        const wrapAmount = 400
+        const unwrapAmount = 300
+        await wrappableToken.approve(tokenManager.address, wrappableTokenBalance)
+        await tokenManager.wrap(wrapAmount)
+
+        await tokenManager.unwrap(unwrapAmount)
+
+        assert.equal(await token.balanceOf(root), wrapAmount - unwrapAmount, "Incorrect native token balance")
+        assert.equal(await wrappableToken.balanceOf(root), wrappableTokenBalance - wrapAmount + unwrapAmount, "Incorrect wrappable token balance")
+      })
+
+      it('allows recovering tokens correctly', async () => {
+        assert.isFalse(await tokenManager.allowRecoverability(token.address))
+        assert.isFalse(await tokenManager.allowRecoverability(wrappableToken.address))
+        assert.isTrue(await tokenManager.allowRecoverability(ETH))
+        assert.isTrue(await tokenManager.allowRecoverability('0x1234000000000000000000000000000000000000'))
+      })
+    })
   })
 
   context('maximum tokens per address limit', async () => {
@@ -85,7 +144,7 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
 
     beforeEach(async () => {
       await token.changeController(tokenManager.address)
-      await tokenManager.initialize(token.address, true, limit)
+      await tokenManager.initialize(token.address, ZERO_ADDRESS, true, limit)
     })
 
     it('can mint up to than limit', async () => {
@@ -149,17 +208,17 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
     context(`for ${tokenTransferable ? 'transferable' : 'non-transferable'} tokens`, () => {
       beforeEach(async () => {
         await token.changeController(tokenManager.address)
-        await tokenManager.initialize(token.address, tokenTransferable, 0)
+        await tokenManager.initialize(token.address, ZERO_ADDRESS, tokenTransferable, 0)
       })
 
       it('fails on reinitialization', async () => {
-        await assertRevert(tokenManager.initialize(token.address, true, 0), ERRORS.INIT_ALREADY_INITIALIZED)
+        await assertRevert(tokenManager.initialize(token.address, ZERO_ADDRESS, true, 0), ERRORS.INIT_ALREADY_INITIALIZED)
       })
 
       it('cannot initialize base app', async () => {
         const newTokenManager = await TokenManager.new()
         assert.isTrue(await newTokenManager.isPetrified())
-        await assertRevert(newTokenManager.initialize(token.address, true, 0), ERRORS.INIT_ALREADY_INITIALIZED)
+        await assertRevert(newTokenManager.initialize(token.address, ZERO_ADDRESS, true, 0), ERRORS.INIT_ALREADY_INITIALIZED)
       })
 
       it('can mint tokens', async () => {
@@ -431,7 +490,7 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
 
     beforeEach(async () => {
       await token.changeController(tokenManager.address)
-      await tokenManager.initialize(token.address, true, 0)
+      await tokenManager.initialize(token.address, ZERO_ADDRESS, true, 0)
 
       hook0 = await TokenManagerHook.new(0)
       hook1 = await TokenManagerHook.new(1)
@@ -547,7 +606,7 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
         assert.equal(await token.controller(), tokenManager.address, 'Incorrect token controller before')
         await tokenManager.changeTokenController(tokenManager2.address)
         assert.equal(await token.controller(), tokenManager2.address, 'Incorrect token controller after')
-        await tokenManager2.initialize(token.address, true, 0)
+        await tokenManager2.initialize(token.address, ZERO_ADDRESS, true, 0)
         await tokenManager2.mint(anyone, 100)
         assert.equal(await token.balanceOf(anyone), 100, "New token manager can't control")
       })

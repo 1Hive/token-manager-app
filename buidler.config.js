@@ -34,7 +34,7 @@ module.exports = {
     },
     // Rinkeby network configured with Aragon node.
     rinkeby: {
-      url: 'https://rinkeby.eth.aragon.network',
+      url: `https://rinkeby.infura.io/v3/${process.env.KEY_INFURA_API_KEY}`,
       accounts: ACCOUNTS,
     },
     // Network configured to interact with Frame wallet. Requires
@@ -46,10 +46,9 @@ module.exports = {
     },
     // xDAI network configured with Aragon node.
     xdai: {
-      url: 'https://xdai.poanetwork.dev',
+      url: 'https://xdai.1hive.org/',
       accounts: ACCOUNTS,
-      gasPrice: 20,
-      gas: 12000000,
+      gasPrice: 2000000000,
     },
   },
   solc: {
