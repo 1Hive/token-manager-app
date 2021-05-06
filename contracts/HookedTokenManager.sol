@@ -61,10 +61,11 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
     mapping (address => mapping (uint256 => TokenVesting)) internal vestings;
     mapping (address => uint256) public vestingsLengths;
 
-    mapping (uint256 => TokenManagerHook) internal hooks;
-    uint256 internal hooksLength;
+    mapping (uint256 => TokenManagerHook) public hooks;
+    uint256 public hooksLength;
 
     // Other token specific events can be watched on the token address directly (avoids duplication)
+    event TokenManagerInitialized(address token, address wrappableToken);
     event NewVesting(address indexed receiver, uint256 vestingId, uint256 amount);
     event RevokeVesting(address indexed receiver, uint256 vestingId, uint256 nonVestedAmount);
 
@@ -106,6 +107,8 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
         if (token.transfersEnabled() != _transferable) {
             token.enableTransfers(_transferable);
         }
+
+        emit TokenManagerInitialized(_token, _wrappableToken);
     }
 
     /**
@@ -325,8 +328,9 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
 
         // Add the managed token to the blacklist to disallow a token holder from executing actions
         // on the token controller's (this contract) behalf
-        address[] memory blacklist = new address[](1);
+        address[] memory blacklist = new address[](2);
         blacklist[0] = address(token);
+        blacklist[1] = address(wrappableToken);
 
         runScript(_evmScript, input, blacklist);
     }

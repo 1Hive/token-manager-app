@@ -136,6 +136,15 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
         assert.isTrue(await tokenManager.allowRecoverability(ETH))
         assert.isTrue(await tokenManager.allowRecoverability('0x1234000000000000000000000000000000000000'))
       })
+
+      it('disallows tokenholders to forward actions to wrappable token', async () => {
+        const executionTarget = wrappableToken
+        await tokenManager.mint(holder, 100)
+        const action = { to: executionTarget.address, calldata: executionTarget.contract.methods.totalSupply().encodeABI() }
+        const script = encodeCallScript([action])
+
+        await assertRevert(tokenManager.forward(script, { from: holder }), "EVMCALLS_BLACKLISTED_CALL")
+      })
     })
   })
 
@@ -276,6 +285,15 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
 
         await tokenManager.forward(script, { from: holder })
         assert.equal(await executionTarget.counter(), 1, 'should have received execution call')
+      })
+
+      it('disallows tokenholders to forward actions to blacklist addresses', async () => {
+        const executionTarget = token
+        await tokenManager.mint(holder, 100)
+        const action = { to: executionTarget.address, calldata: executionTarget.contract.methods.totalSupply().encodeABI() }
+        const script = encodeCallScript([action])
+
+        await assertRevert(tokenManager.forward(script, { from: holder }), "EVMCALLS_BLACKLISTED_CALL")
       })
 
       it('disallows non-tokenholders from forwarding actions', async () => {
