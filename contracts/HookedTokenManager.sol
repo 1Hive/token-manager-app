@@ -65,6 +65,7 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
     uint256 public hooksLength;
 
     // Other token specific events can be watched on the token address directly (avoids duplication)
+    event TokenManagerInitialized(address token, address wrappableToken);
     event NewVesting(address indexed receiver, uint256 vestingId, uint256 amount);
     event RevokeVesting(address indexed receiver, uint256 vestingId, uint256 nonVestedAmount);
 
@@ -106,6 +107,8 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
         if (token.transfersEnabled() != _transferable) {
             token.enableTransfers(_transferable);
         }
+
+        emit TokenManagerInitialized(_token, _wrappableToken);
     }
 
     /**
