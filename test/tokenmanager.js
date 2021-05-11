@@ -130,6 +130,22 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
         assert.equal(await wrappableToken.balanceOf(root), wrappableTokenBalance - wrapAmount + unwrapAmount, "Incorrect wrappable token balance")
       })
 
+      it('wrap reverts when wrapping more than available', async () => {
+        const wrapAmount = wrappableTokenBalance + 1
+        await wrappableToken.approve(tokenManager.address, wrapAmount)
+
+        await assertRevert(tokenManager.wrap(wrapAmount), "TM_SAFE_TRANSFER_FAILED")
+      })
+
+      it('unwrap reverts when unwrapping more than available', async () => {
+        const unwrapAmount = wrappableTokenBalance + 1
+        await wrappableToken.approve(tokenManager.address, wrappableTokenBalance)
+        await tokenManager.wrap(wrappableTokenBalance)
+
+        // No expectedReason because the minimetoken destroyTokens() function reverts before getting to the transfer call
+        await assertRevert(tokenManager.unwrap(unwrapAmount), )
+      })
+
       it('allows recovering tokens correctly', async () => {
         assert.isFalse(await tokenManager.allowRecoverability(token.address))
         assert.isFalse(await tokenManager.allowRecoverability(wrappableToken.address))
@@ -559,7 +575,7 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
       // Transfer from holder to token manager
       assert.equal(getTopicArgumentAsAddr(receipt3, 'TransferHooked(uint256,address,address)', 2), holder.toLowerCase())
       assert.equal(getTopicArgumentAsAddr(receipt3, 'TransferHooked(uint256,address,address)', 3), tokenManager.address.toLowerCase())
-      
+
       assert.equal(await token.balanceOf(tokenManager.address), 10, 'Token Manager balance after transfer')
     })
 
