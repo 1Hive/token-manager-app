@@ -40,6 +40,7 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
     string private constant ERROR_VESTING_NOT_REVOKABLE = "TM_VESTING_NOT_REVOKABLE";
     string private constant ERROR_REVOKE_TRANSFER_FROM_REVERTED = "TM_REVOKE_TRANSFER_FROM_REVERTED";
     string private constant ERROR_NO_WRAPPABLE_TOKEN = "TM_NO_WRAPPABLE_TOKEN";
+    string private constant ERROR_SAFE_TRANSFER_FAILED = "TM_SAFE_TRANSFER_FAILED";
     string private constant ERROR_CAN_NOT_FORWARD = "TM_CAN_NOT_FORWARD";
     string private constant ERROR_BALANCE_INCREASE_NOT_ALLOWED = "TM_BALANCE_INC_NOT_ALLOWED";
     string private constant ERROR_ASSIGN_TRANSFER_FROM_REVERTED = "TM_ASSIGN_TRANSFER_FROM_REVERTED";
@@ -256,7 +257,7 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
         require(wrappableToken != address(0), ERROR_NO_WRAPPABLE_TOKEN);
         require(msg.sender != address(this), ERROR_MINT_RECEIVER_IS_TM);
 
-        wrappableToken.safeTransferFrom(msg.sender, address(this), _amount);
+        require(wrappableToken.safeTransferFrom(msg.sender, address(this), _amount), ERROR_SAFE_TRANSFER_FAILED);
         _mint(msg.sender, _amount);
     }
 
@@ -269,7 +270,7 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
         require(msg.sender != address(this), ERROR_MINT_RECEIVER_IS_TM);
 
         _burn(msg.sender, _amount);
-        wrappableToken.safeTransfer(msg.sender, _amount);
+        require(wrappableToken.safeTransfer(msg.sender, _amount), ERROR_SAFE_TRANSFER_FAILED);
     }
 
     // ITokenController fns
