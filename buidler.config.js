@@ -50,12 +50,22 @@ module.exports = {
       accounts: ACCOUNTS,
       gasPrice: 2000000000,
     },
+    arbtest: {
+      url: 'https://rinkeby.arbitrum.io/rpc',
+      accounts: [process.env.ETH_KEY],
+      gasPrice: 0,
+    },
+    arbitrum: {
+      url: 'https://arb1.arbitrum.io/rpc',
+      accounts: [process.env.ETH_KEY],
+      gasPrice: 0,
+    },
   },
   solc: {
     version: '0.4.24',
     optimizer: {
       enabled: true,
-      runs: 10000,
+      runs: 20000,
     },
   },
   gasReporter: {

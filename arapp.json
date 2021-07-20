@@ -20,6 +20,16 @@
       "registry": "0xaafca6b0c89521752e559650206d7c925fd0e530",
       "appName": "wrappable-hooked-token-manager.open.aragonpm.eth",
       "network": "xdai"
+    },
+    "arbtest": {
+      "registry": "0x73ddD4B38982aB515daCf43289B41706f9A39199",
+      "appName": "wrappable-hooked-token-manager.open.aragonpm.eth",
+      "network": "arbtest"
+    },
+    "arbitrum": {
+      "registry": "0x2DDE068a7fdF72c10848298cC0317E691E40E593",
+      "appName": "wrappable-hooked-token-manager.open.aragonpm.eth",
+      "network": "arbitrum"
     }
   },
   "roles": [
