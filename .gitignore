@@ -10,3 +10,4 @@ coverage
 abi
 artifacts
 cache
+.env

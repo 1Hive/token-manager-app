@@ -1,5 +1,3 @@
-import 'core-js/stable'
-import 'regenerator-runtime/runtime'
 import Aragon, { events } from '@aragon/api'
 import tokenSettings, { hasLoadedTokenSettings } from './token-settings'
 import { addressesEqual } from './web3-utils'
