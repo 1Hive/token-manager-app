@@ -1,13 +1,10 @@
 const ERRORS = require('./helpers/errors')
-const { assertBn, assertRevert } = require('@aragon/contract-helpers-test/src/asserts')
+const { assertRevert } = require("./helpers/assertThrow");
+const { assertBn } = require('@aragon/contract-helpers-test/src/asserts')
 const { getTopics, getTopicAt, getTopicArgument, getTopicArgumentAsAddr } = require('./helpers/topics')
-const { injectWeb3, injectArtifacts, ZERO_ADDRESS, getEvents,
-  getEventAt, getEventArgument } = require('@aragon/contract-helpers-test')
+const { ZERO_ADDRESS, getEvents, getEventAt, getEventArgument } = require('@aragon/contract-helpers-test')
 const { ANY_ENTITY, newDao, installNewApp, encodeCallScript } = require('@aragon/contract-helpers-test/src/aragon-os')
 const { assert } = require('chai')
-
-injectWeb3(web3)
-injectArtifacts(artifacts)
 
 const TokenManager = artifacts.require('TokenManagerMock')
 const ExecutionTarget = artifacts.require('ExecutionTarget')

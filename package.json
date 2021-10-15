@@ -10,43 +10,43 @@
     "Brett Sun <brett@aragon.one>"
   ],
   "files": [
-    "/abi",
     "/arapp.json",
-    "/artifacts",
+    "/artifacts/contracts/**/*.json",
+    "!/artifacts/contracts/**/*.dbg.json",
     "/contracts",
     "/test"
   ],
   "scripts": {
-    "build-app": "cd app && npm install && cd ..",
-    "console": "buidler console",
-    "compile": "buidler compile --force",
+    "console": "hardhat console",
+    "compile": "hardhat compile --force",
+    "chain": "hardhat node",
     "build": "cd app && yarn build",
-    "devchain": "buidler node",
     "lint": "solium --dir ./contracts",
-    "test": "buidler test --network buidlerevm",
-    "test:gas": "REPORT_GAS=true buidler test --network localhost",
-    "coverage": "buidler coverage --network coverage",
-    "abi:extract": "buidler-extract --output abi/ --keys abi",
-    "start": "buidler start"
+    "test": "hardhat test",
+    "test:gas": "REPORT_GAS=true hardhat test --network localhost",
+    "coverage": "hardhat coverage",
+    "publish:major": "hardhat publish major",
+    "publish:minor": "hardhat publish minor",
+    "publish:patch": "hardhat publish patch"
   },
   "dependencies": {
     "@aragon/minime": "1.0.0",
     "@aragon/os": "5.0.0-rc.0"
   },
   "devDependencies": {
-    "@aragon/buidler-aragon": "^0.2.9",
+    "@1hive/hardhat-aragon": "^0.0.3",
     "@aragon/contract-helpers-test": "^0.1.0",
-    "@nomiclabs/buidler": "^1.4.3",
-    "@nomiclabs/buidler-etherscan": "^1.3.3",
-    "@nomiclabs/buidler-ganache": "^1.3.3",
-    "@nomiclabs/buidler-solhint": "^1.3.3",
-    "@nomiclabs/buidler-truffle5": "^1.3.4",
-    "@nomiclabs/buidler-web3": "^1.3.4",
-    "buidler-extract": "^1.0.0",
-    "buidler-gas-reporter": "^0.1.3",
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-truffle5": "^2.0.2",
+    "@nomiclabs/hardhat-web3": "^2.0.0",
     "chai": "^4.2.0",
-    "solidity-coverage": "^0.7.9",
+    "dotenv": "^9.0.2",
+    "ethers": "^5.4.7",
+    "hardhat": "^2.6.6",
+    "hardhat-deploy": "^0.9.3",
+    "hardhat-gas-reporter": "^1.0.4",
+    "solidity-coverage": "^0.7.16",
     "solium": "^1.2.5",
-    "web3": "^1.2.11"
+    "web3": "^1.6.0"
   }
 }
