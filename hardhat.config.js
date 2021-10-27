@@ -89,8 +89,6 @@ module.exports = {
     mainnet: {
       url: node_url("mainnet"),
       accounts: accounts("mainnet"),
-      appEnsName: "hooked-token-manager.open.aragonpm.eth",
-      appEnsName: "conviction-voting.open.aragonpm.eth",
     },
     rinkeby: {
       url: node_url("rinkeby"),
