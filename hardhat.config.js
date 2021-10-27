@@ -107,10 +107,10 @@ module.exports = {
       accounts: accounts("xdai"),
       ensRegistry: "0xaafca6b0c89521752e559650206d7c925fd0e530",
     },
-    polygon2: {
+    polygon: {
       url: node_url("polygon"),
       accounts: account("polygon"),
-      ensRegistry: "0x4E065c622d584Fbe5D9078C3081840155FA69581",
+      ensRegistry: "0x7EdE100965B1E870d726cD480dD41F2af1Ca0130",
     },
     mumbai: {
       url: node_url("mumbai"),
@@ -127,12 +127,11 @@ module.exports = {
       accounts: accounts("arbtest"),
       ensRegistry: "0x73ddD4B38982aB515daCf43289B41706f9A39199",
     },
-    polygon: {
+    frame: {
       url: "http://localhost:1248",
       httpHeaders: { origin: "hardhat" },
       timeout: 0,
       gas: 0,
-      ensRegistry: "0x4E065c622d584Fbe5D9078C3081840155FA69581",
     },
   },
   ipfs: {
