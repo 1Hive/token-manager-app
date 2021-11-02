@@ -27,6 +27,7 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
     bytes32 public constant REVOKE_VESTINGS_ROLE = keccak256("REVOKE_VESTINGS_ROLE");
     bytes32 public constant BURN_ROLE = keccak256("BURN_ROLE");
     bytes32 public constant SET_HOOK_ROLE = keccak256("SET_HOOK_ROLE");
+    bytes32 public constant WRAP_TOKEN_ROLE = keccak256("WRAP_TOKEN_ROLE");
 
     uint256 public constant MAX_VESTINGS_PER_ADDRESS = 50;
 
@@ -253,7 +254,7 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
     * @notice Wrap @tokenAmount(self.wrappableToken(): address, _amount, false) to receive @tokenAmount(self.token(): address, _amount, false)
     * @param _amount Amount of tokens to wrap
     */
-    function wrap(uint256 _amount) external {
+    function wrap(uint256 _amount) external authP(WRAP_TOKEN_ROLE, arr(msg.sender)) {
         require(wrappableToken != address(0), ERROR_NO_WRAPPABLE_TOKEN);
         require(msg.sender != address(this), ERROR_MINT_RECEIVER_IS_TM);
 
@@ -265,7 +266,7 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
     * @notice Unwrap @tokenAmount(self.token(): address, _amount, false) to receive @tokenAmount(self.wrappableToken(): address, _amount, false)
     * @param _amount Amount of tokens to unwrap
     */
-    function unwrap(uint256 _amount) external {
+    function unwrap(uint256 _amount) external isInitialized {
         require(wrappableToken != address(0), ERROR_NO_WRAPPABLE_TOKEN);
         require(msg.sender != address(this), ERROR_MINT_RECEIVER_IS_TM);
 
