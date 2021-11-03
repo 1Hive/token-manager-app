@@ -163,19 +163,20 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
         await assertRevert(tokenManager.forward(script, { from: holder }), "EVMCALLS_BLACKLISTED_CALL")
       })
 
-      describe('behind ACL oracle', () => {
+      context('behind ACL oracle', () => {
         beforeEach(async () => {
           const { address: aclOracleAddr } = await ACLOracleMock.new(root)
           await acl.grantPermissionP(ANY_ENTITY, tokenManager.address, await tokenManager.WRAP_TOKEN_ROLE(), [createEqOraclePermissionParam(aclOracleAddr)])
           await wrappableToken.approve(tokenManager.address, wrappableTokenBalance)
         })
 
-        it('should create a signaling proposal when allowed', async () => {
+        it('should wrap tokens when allowed', async () => {
           await tokenManager.wrap(wrappableTokenBalance, { from: root })
+          assert.equal(await token.balanceOf(root), wrappableTokenBalance, "Incorrect token balance")
         })
 
         it('should revert when not allowed', async () => {
-          await assertRevert(tokenManager.wrap(wrappableTokenBalance, { from: holder }))
+          await assertRevert(tokenManager.wrap(wrappableTokenBalance, { from: holder }), "APP_AUTH_FAILED")
         })
       })
     })
