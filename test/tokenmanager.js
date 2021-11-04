@@ -1,19 +1,21 @@
 const ERRORS = require('./helpers/errors')
 const { assertRevert } = require("./helpers/assertThrow");
 const { assertBn } = require('@aragon/contract-helpers-test/src/asserts')
-const { getTopics, getTopicAt, getTopicArgument, getTopicArgumentAsAddr } = require('./helpers/topics')
-const { ZERO_ADDRESS, getEvents, getEventAt, getEventArgument } = require('@aragon/contract-helpers-test')
-const { ANY_ENTITY, newDao, installNewApp, encodeCallScript } = require('@aragon/contract-helpers-test/src/aragon-os')
-const { assert } = require('chai')
+const { getTopicArgument, getTopicArgumentAsAddr } = require('./helpers/topics')
+const { ZERO_ADDRESS } = require('@aragon/contract-helpers-test')
+const { ANY_ENTITY, newDao, installNewApp, encodeCallScript, createEqOraclePermissionParam } = require('@aragon/contract-helpers-test/src/aragon-os')
+const { assert } = require('chai');
+const { artifacts } = require('hardhat');
 
 const TokenManager = artifacts.require('TokenManagerMock')
 const ExecutionTarget = artifacts.require('ExecutionTarget')
 const MiniMeToken = artifacts.require('MiniMeToken')
 const TokenManagerHook = artifacts.require('TokenManagerHookMock')
+const ACLOracleMock = artifacts.require('ACLOracleMock')
 
 contract('Token Manager', ([root, holder, holder2, anyone]) => {
   let dao, acl, tokenManagerBase, tokenManager, token
-  let MINT_ROLE, ISSUE_ROLE, ASSIGN_ROLE, REVOKE_VESTINGS_ROLE, BURN_ROLE, SET_HOOK_ROLE, CHANGE_CONTROLLER_ROLE
+  let MINT_ROLE, ISSUE_ROLE, ASSIGN_ROLE, REVOKE_VESTINGS_ROLE, BURN_ROLE, SET_HOOK_ROLE, CHANGE_CONTROLLER_ROLE, WRAP_TOKEN_ROLE
 
   const NOW = 1
   const ETH = ZERO_ADDRESS
@@ -28,6 +30,7 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
     BURN_ROLE = await tokenManagerBase.BURN_ROLE()
     SET_HOOK_ROLE = await tokenManagerBase.SET_HOOK_ROLE()
     CHANGE_CONTROLLER_ROLE = await tokenManagerBase.CHANGE_CONTROLLER_ROLE()
+    WRAP_TOKEN_ROLE = await tokenManagerBase.WRAP_TOKEN_ROLE()
   })
 
   beforeEach('deploy DAO with token manager', async () => {
@@ -43,6 +46,7 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
     await acl.createPermission(ANY_ENTITY, tokenManager.address, BURN_ROLE, root, { from: root })
     await acl.createPermission(ANY_ENTITY, tokenManager.address, SET_HOOK_ROLE, root, { from: root })
     await acl.createPermission(ANY_ENTITY, tokenManager.address, CHANGE_CONTROLLER_ROLE, root, { from: root })
+    await acl.createPermission(ANY_ENTITY, tokenManager.address, WRAP_TOKEN_ROLE, root, { from: root })
 
     token = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'n', 0, 'n', true)
   })
@@ -157,6 +161,23 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
         const script = encodeCallScript([action])
 
         await assertRevert(tokenManager.forward(script, { from: holder }), "EVMCALLS_BLACKLISTED_CALL")
+      })
+
+      context('behind ACL oracle', () => {
+        beforeEach(async () => {
+          const { address: aclOracleAddr } = await ACLOracleMock.new(root)
+          await acl.grantPermissionP(ANY_ENTITY, tokenManager.address, await tokenManager.WRAP_TOKEN_ROLE(), [createEqOraclePermissionParam(aclOracleAddr)])
+          await wrappableToken.approve(tokenManager.address, wrappableTokenBalance)
+        })
+
+        it('should wrap tokens when allowed', async () => {
+          await tokenManager.wrap(wrappableTokenBalance, { from: root })
+          assert.equal(await token.balanceOf(root), wrappableTokenBalance, "Incorrect token balance")
+        })
+
+        it('should revert when not allowed', async () => {
+          await assertRevert(tokenManager.wrap(wrappableTokenBalance, { from: holder }), "APP_AUTH_FAILED")
+        })
       })
     })
   })

@@ -41,6 +41,13 @@
       ]
     },
     {
+      "name": "Wrap tokens",
+      "id": "WRAP_TOKEN_ROLE",
+      "params": [
+        "Account"
+      ]
+    },
+    {
       "name": "Mint tokens",
       "id": "MINT_ROLE",
       "params": [
