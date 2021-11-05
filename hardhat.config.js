@@ -35,6 +35,13 @@ module.exports = {
         params: ["New controller"],
       },
       {
+        "name": "Wrap tokens",
+        "id": "WRAP_TOKEN_ROLE",
+        "params": [
+          "Account"
+        ]
+      },
+      {
         name: "Mint tokens",
         id: "MINT_ROLE",
         params: ["Receiver", "Token amount"],
@@ -92,7 +99,7 @@ module.exports = {
     },
     rinkeby: {
       url: node_url("rinkeby"),
-      accounts: accounts("rinkeby"),
+      accounts: account("rinkeby"),
       ensRegistry: "0x98Df287B6C145399Aaa709692c8D308357bC085D",
     },
     ropsten: {
@@ -102,7 +109,7 @@ module.exports = {
     },
     xdai: {
       url: node_url("xdai"),
-      accounts: accounts("xdai"),
+      accounts: account("xdai"),
       ensRegistry: "0xaafca6b0c89521752e559650206d7c925fd0e530",
     },
     polygon: {
