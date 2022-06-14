@@ -51,10 +51,6 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
     token = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'n', 0, 'n', true)
   })
 
-  it('checks it is forwarder', async () => {
-    assert.isTrue(await tokenManager.isForwarder())
-  })
-
   it('initializing as transferable sets the token as transferable', async () => {
     const transferable = true
     await token.enableTransfers(!transferable)
@@ -152,15 +148,6 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
         assert.isFalse(await tokenManager.allowRecoverability(wrappableToken.address))
         assert.isTrue(await tokenManager.allowRecoverability(ETH))
         assert.isTrue(await tokenManager.allowRecoverability('0x1234000000000000000000000000000000000000'))
-      })
-
-      it('disallows tokenholders to forward actions to wrappable token', async () => {
-        const executionTarget = wrappableToken
-        await tokenManager.mint(holder, 100)
-        const action = { to: executionTarget.address, calldata: executionTarget.contract.methods.totalSupply().encodeABI() }
-        const script = encodeCallScript([action])
-
-        await assertRevert(tokenManager.forward(script, { from: holder }), "EVMCALLS_BLACKLISTED_CALL")
       })
 
       context('behind ACL oracle', () => {
@@ -308,34 +295,6 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
         await tokenManager.issue(50)
 
         await assertRevert(tokenManager.assign(holder, 51), ERRORS.TM_ASSIGN_TRANSFER_FROM_REVERTED)
-      })
-
-      it('allows tokenholders to forwards actions', async () => {
-        const executionTarget = await ExecutionTarget.new()
-        await tokenManager.mint(holder, 100)
-
-        const action = { to: executionTarget.address, calldata: executionTarget.contract.methods.execute().encodeABI() }
-        const script = encodeCallScript([action])
-
-        await tokenManager.forward(script, { from: holder })
-        assert.equal(await executionTarget.counter(), 1, 'should have received execution call')
-      })
-
-      it('disallows tokenholders to forward actions to blacklist addresses', async () => {
-        const executionTarget = token
-        await tokenManager.mint(holder, 100)
-        const action = { to: executionTarget.address, calldata: executionTarget.contract.methods.totalSupply().encodeABI() }
-        const script = encodeCallScript([action])
-
-        await assertRevert(tokenManager.forward(script, { from: holder }), "EVMCALLS_BLACKLISTED_CALL")
-      })
-
-      it('disallows non-tokenholders from forwarding actions', async () => {
-        const executionTarget = await ExecutionTarget.new()
-        const action = { to: executionTarget.address, calldata: executionTarget.contract.methods.execute().encodeABI() }
-        const script = encodeCallScript([action])
-
-        await assertRevert(tokenManager.forward(script, { from: anyone }), ERRORS.TM_CAN_NOT_FORWARD)
       })
 
       it("cannot call onTransfer() from outside of the token's context", async () => {
@@ -525,14 +484,6 @@ contract('Token Manager', ([root, holder, holder2, anyone]) => {
 
     it('fails to burn tokens', async() => {
       await assertRevert(tokenManager.burn(holder, 1), ERRORS.APP_AUTH_FAILED)
-    })
-
-    it('disallows forwarding actions', async () => {
-      const executionTarget = await ExecutionTarget.new()
-      const action = { to: executionTarget.address, calldata: executionTarget.contract.methods.execute().encodeABI() }
-      const script = encodeCallScript([action])
-
-      await assertRevert(tokenManager.forward(script, { from: anyone }), ERRORS.TM_CAN_NOT_FORWARD)
     })
   })
 

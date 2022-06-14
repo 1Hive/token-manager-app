@@ -7,7 +7,6 @@
 pragma solidity 0.4.24;
 
 import "@aragon/os/contracts/apps/AragonApp.sol";
-import "@aragon/os/contracts/forwarding/IForwarder.sol";
 
 import "@aragon/os/contracts/lib/math/SafeMath.sol";
 
@@ -17,7 +16,7 @@ import "@aragon/minime/contracts/ITokenController.sol";
 import "./TokenManagerHook.sol";
 
 
-contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
+contract HookedTokenManager is ITokenController, AragonApp {
     using SafeMath for uint256;
 
     bytes32 public constant CHANGE_CONTROLLER_ROLE = keccak256("CHANGE_CONTROLLER_ROLE");
@@ -42,7 +41,6 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
     string private constant ERROR_REVOKE_TRANSFER_FROM_REVERTED = "TM_REVOKE_TRANSFER_FROM_REVERTED";
     string private constant ERROR_NO_WRAPPABLE_TOKEN = "TM_NO_WRAPPABLE_TOKEN";
     string private constant ERROR_SAFE_TRANSFER_FAILED = "TM_SAFE_TRANSFER_FAILED";
-    string private constant ERROR_CAN_NOT_FORWARD = "TM_CAN_NOT_FORWARD";
     string private constant ERROR_BALANCE_INCREASE_NOT_ALLOWED = "TM_BALANCE_INC_NOT_ALLOWED";
     string private constant ERROR_ASSIGN_TRANSFER_FROM_REVERTED = "TM_ASSIGN_TRANSFER_FROM_REVERTED";
 
@@ -313,34 +311,6 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
         return false;
     }
 
-    // Forwarding fns
-
-    function isForwarder() external pure returns (bool) {
-        return true;
-    }
-
-    /**
-    * @notice Execute desired action as a token holder
-    * @dev IForwarder interface conformance. Forwards any token holder action.
-    * @param _evmScript Script being executed
-    */
-    function forward(bytes _evmScript) external {
-        require(_canForward(msg.sender), ERROR_CAN_NOT_FORWARD);
-        bytes memory input = new bytes(0); // TODO: Consider input for this
-
-        // Add the managed token to the blacklist to disallow a token holder from executing actions
-        // on the token controller's (this contract) behalf
-        address[] memory blacklist = new address[](2);
-        blacklist[0] = address(token);
-        blacklist[1] = address(wrappableToken);
-
-        runScript(_evmScript, input, blacklist);
-    }
-
-    function canForward(address _sender, bytes) external view returns (bool) {
-        return _canForward(_sender);
-    }
-
     // Getter fns
 
     function getVesting(
@@ -513,9 +483,5 @@ contract HookedTokenManager is ITokenController, IForwarder, AragonApp {
             }
             i++;
         }
-    }
-
-    function _canForward(address _sender) internal view returns (bool) {
-        return hasInitialized() && token.balanceOf(_sender) > 0;
     }
 }
