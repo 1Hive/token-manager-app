@@ -26,20 +26,13 @@ module.exports = {
     ],
   },
   aragon: {
-    appEnsName: "wrappable-hooked-token-manager.open.aragonpm.eth",
+    appEnsName: "hooked-token-manager-no-controller.open.aragonpm.eth",
     appContractName: "HookedTokenManager",
     appRoles: [
       {
         name: "Change token controller",
         id: "CHANGE_CONTROLLER_ROLE",
         params: ["New controller"],
-      },
-      {
-        "name": "Wrap tokens",
-        "id": "WRAP_TOKEN_ROLE",
-        "params": [
-          "Account"
-        ]
       },
       {
         name: "Mint tokens",
@@ -99,7 +92,7 @@ module.exports = {
     },
     rinkeby: {
       url: node_url("rinkeby"),
-      accounts: account("rinkeby"),
+      accounts: accounts("rinkeby"),
       ensRegistry: "0x98Df287B6C145399Aaa709692c8D308357bC085D",
     },
     ropsten: {
@@ -109,7 +102,7 @@ module.exports = {
     },
     xdai: {
       url: node_url("xdai"),
-      accounts: account("xdai"),
+      accounts: accounts("xdai"),
       ensRegistry: "0xaafca6b0c89521752e559650206d7c925fd0e530",
     },
     polygon: {

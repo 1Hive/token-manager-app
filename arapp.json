@@ -18,7 +18,7 @@
     },
     "xdai": {
       "registry": "0xaafca6b0c89521752e559650206d7c925fd0e530",
-      "appName": "wrappable-hooked-token-manager.open.aragonpm.eth",
+      "appName": "hooked-token-manager-no-controller.open.aragonpm.eth",
       "network": "xdai"
     },
     "arbtest": {
@@ -48,13 +48,6 @@
       "id": "CHANGE_CONTROLLER_ROLE",
       "params": [
         "New controller"
-      ]
-    },
-    {
-      "name": "Wrap tokens",
-      "id": "WRAP_TOKEN_ROLE",
-      "params": [
-        "Account"
       ]
     },
     {
